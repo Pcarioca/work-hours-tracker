@@ -1,467 +1,358 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>Work Hours Tracker</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    :root {
-      color-scheme: dark;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
       background: #050814;
       color: #f5f6fa;
     }
 
-    main {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 1rem;
-    }
+    main { max-width: 960px; margin: 0 auto; padding: 1rem; }
 
     .card {
       background: #111827;
       border-radius: 1rem;
       padding: 1rem 1.25rem;
       margin-bottom: 1rem;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 12px 30px rgba(0,0,0,.45);
     }
 
-    h1 {
-      font-size: 1.6rem;
-      margin: 0 0 .5rem;
-    }
-
-    h2 {
-      font-size: 1.1rem;
-      margin-top: 0;
-      margin-bottom: .4rem;
-    }
-
-    p {
-      margin-top: 0;
-    }
+    h1 { font-size: 1.6rem; margin: 0 0 .5rem; }
+    h2 { font-size: 1.1rem; margin: 0 0 .4rem; }
+    p { margin: 0; }
 
     .badge {
       display: inline-block;
       padding: .25rem .75rem;
       border-radius: 999px;
-      font-weight: 600;
+      font-weight: 700;
       font-size: .9rem;
     }
+    .red   { background:#3b0b16; color:#ff6b81; }
+    .yellow{ background:#3b2e08; color:#ffeaa7; }
+    .green { background:#052a1a; color:#55efc4; }
 
-    .badge.red {
-      background: #3b0b16;
-      color: #ff6b81;
-    }
-
-    .badge.yellow {
-      background: #3b2e08;
-      color: #ffeaa7;
-    }
-
-    .badge.green {
-      background: #052a1a;
-      color: #55efc4;
-    }
+    .muted { opacity:.75; font-size:.85rem; }
 
     .week-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(120px,1fr));
       gap: .5rem;
     }
 
     .day-card {
-      background: #1f2937;
-      border-radius: .75rem;
-      padding: .5rem .75rem;
+      background:#1f2937;
+      border-radius:.75rem;
+      padding:.55rem .75rem;
     }
-
     .day-card label {
-      display: block;
-      font-size: .8rem;
-      opacity: .8;
-      margin-bottom: .25rem;
+      display:block; font-size:.8rem; opacity:.85; margin-bottom:.25rem;
     }
-
     .day-card input {
-      width: 100%;
-      padding: .35rem .4rem;
-      border-radius: .5rem;
-      border: 1px solid #374151;
-      background: #050814;
-      color: #f5f6fa;
-      font-size: .9rem;
+      width:100%;
+      padding:.4rem .5rem;
+      border-radius:.5rem;
+      border:1px solid #374151;
+      background:#050814; color:#f5f6fa; font-size:.95rem;
     }
 
     .summary-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .5rem;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: .75rem;
-      font-size: .9rem;
+      display:flex; flex-wrap:wrap; gap:.6rem;
+      align-items:center; justify-content:space-between;
+      margin-top:.75rem; font-size:.95rem;
     }
 
     button {
-      border: none;
-      border-radius: .75rem;
-      padding: .5rem .9rem;
-      font-size: .9rem;
-      font-weight: 600;
-      background: #2563eb;
-      color: #ffffff;
-      box-shadow: 0 6px 14px rgba(0, 0, 0, .5);
-      cursor: pointer;
+      border:none; border-radius:.75rem;
+      padding:.55rem .95rem;
+      font-weight:700; font-size:.95rem;
+      background:#2563eb; color:#fff; cursor:pointer;
+      box-shadow:0 6px 14px rgba(0,0,0,.45);
     }
+    button:disabled { opacity:.5; cursor:default; box-shadow:none; }
 
-    button:disabled {
-      opacity: .5;
-      cursor: default;
-      box-shadow: none;
-    }
+    table { width:100%; border-collapse:collapse; font-size:.86rem; }
+    th, td { padding:.35rem .45rem; border-bottom:1px solid #252b3b; text-align:left; white-space:nowrap; }
+    th { font-weight:700; opacity:.85; }
 
-    .table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: .85rem;
-      margin-top: .5rem;
-    }
-
-    .table th,
-    .table td {
-      padding: .3rem .4rem;
-      border-bottom: 1px solid #252b3b;
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    .table th {
-      font-weight: 600;
-      opacity: .85;
-    }
-
-    code {
-      background: #020617;
-      padding: 0 .25rem;
-      border-radius: .25rem;
-      font-size: .85em;
-    }
-
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 1.3rem;
-      }
-
-      .card {
-        padding: .9rem;
-      }
+    @media (max-width:600px) {
+      h1 { font-size:1.35rem; }
+      .card { padding:.9rem; }
     }
   </style>
 
-  <!-- Supabase client -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <main>
   <header class="card">
     <h1>Work Hours Tracker</h1>
-    <p style="font-size:.9rem;margin-bottom:.5rem;">
-      Target: <strong>20 h / week</strong>. Overtime goes into your bank; missing time comes out of it.
+    <p class="muted" style="margin-bottom:.5rem">
+      Target: <strong>20 h / week</strong>.
+      Bank updates <strong>only up to last Friday</strong>. Current week is shown but not counted.
     </p>
-    <div id="bonusBadge" class="badge yellow">Loading…</div>
+    <div id="bankBadge" class="badge yellow">Loading…</div>
+    <div class="muted" id="bankNote" style="margin-left:.5rem; display:inline-block"></div>
   </header>
 
-  <section id="currentWeekCard" class="card">
-    <h2 id="weekTitle">This week</h2>
-    <div class="week-grid" id="weekGrid"></div>
-
+  <section class="card">
+    <h2 id="currentTitle">This week (not counted)</h2>
+    <div id="weekGrid" class="week-grid"></div>
     <div class="summary-row">
       <div>
         <div>Worked this week: <strong><span id="weekTotal">0</span> h</strong></div>
-        <div id="weekStatus" style="opacity:.85;"></div>
+        <div id="weekHelp" class="muted"></div>
       </div>
       <button id="saveBtn" disabled>Save changes</button>
     </div>
   </section>
 
   <section class="card">
-    <h2>Past weeks</h2>
-    <table class="table" id="historyTable">
+    <h2>Past weeks (counted up to last Friday)</h2>
+    <table>
       <thead>
       <tr>
-        <th>Week</th>
-        <th>Total hours</th>
+        <th>W#</th>
+        <th>Week (Mon–Fri)</th>
+        <th>Total</th>
         <th>Δ vs 20h</th>
         <th>Bank after week</th>
       </tr>
       </thead>
       <tbody id="historyBody">
-      <tr><td colspan="4">Loading…</td></tr>
+      <tr><td colspan="5">Loading…</td></tr>
       </tbody>
     </table>
-  </section>
-
-  <section class="card">
-    <h2>Setup</h2>
-    <p style="font-size:.8rem;opacity:.8;">
-      Supabase project: <code>pmapkowimesplgbvrook</code>. If you ever rotate keys, just update them in this file.
-    </p>
   </section>
 </main>
 
 <script>
-  // --------- SUPABASE CONFIG (YOUR PROJECT) ----------
+  /* ------------------------- SUPABASE CONFIG ------------------------- */
   const supabaseUrl = 'https://pmapkowimesplgbvrook.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtYXBrb3dpbWVzcGxnYnZyb29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4MTUwNzYsImV4cCI6MjA3ODM5MTA3Nn0.5_jdBZfEHMq4thAe9UnmDOzAhQRq_9QclnEIjbaoj0M';
   const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-  // ---------------------------------------------------
+  /* ------------------------------------------------------------------ */
 
-  const TARGET_HOURS = 20;
+  const TARGET = 20;
 
-  const weekGrid = document.getElementById('weekGrid');
-  const weekTitle = document.getElementById('weekTitle');
-  const weekTotalEl = document.getElementById('weekTotal');
-  const weekStatusEl = document.getElementById('weekStatus');
-  const bonusBadge = document.getElementById('bonusBadge');
-  const saveBtn = document.getElementById('saveBtn');
-  const historyBody = document.getElementById('historyBody');
+  const bankBadge  = document.getElementById('bankBadge');
+  const bankNote   = document.getElementById('bankNote');
+  const historyT   = document.getElementById('historyBody');
+  const weekGrid   = document.getElementById('weekGrid');
+  const weekTotalE = document.getElementById('weekTotal');
+  const weekHelp   = document.getElementById('weekHelp');
+  const saveBtn    = document.getElementById('saveBtn');
+  const currentTitle = document.getElementById('currentTitle');
 
-  let allDays = {};          // "YYYY-MM-DD" -> hours
-  let currentWeekDates = []; // list of date strings for current week
+  let allDays = {};       // 'YYYY-MM-DD' -> number
   let dirty = false;
 
+  /* ---------------------------- DATE HELPERS ---------------------------- */
+  function atMidnight(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+  function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
   function getMonday(d) {
-    const date = new Date(d);
-    const day = date.getDay(); // 0 Sun, 1 Mon, ...
+    const x = atMidnight(d);
+    const day = x.getDay(); // 0 Sun, 1 Mon ... 6 Sat
     const diff = (day === 0 ? -6 : 1) - day;
-    date.setDate(date.getDate() + diff);
-    date.setHours(0, 0, 0, 0);
-    return date;
+    return addDays(x, diff);
   }
-
-  function formatDate(d) {
-    return d.toISOString().slice(0, 10);
+  function fridayOfWeek(d){ return addDays(getMonday(d), 4); }
+  function lastFriday(today) {
+    const fri = fridayOfWeek(today);
+    // If we're past Friday (Sat or Sun), last Friday is this week's Friday.
+    // Otherwise (Mon–Fri), last Friday is previous week's Friday.
+    if (atMidnight(today) > fri) return fri;
+    return addDays(fri, -7);
   }
+  function formatDate(d){ return d.toISOString().slice(0,10); }
 
-  function weekKey(d) {
-    const monday = getMonday(d);
-    const year = monday.getFullYear();
-    const oneJan = new Date(year, 0, 1);
-    const dayOfYear = Math.floor((monday - oneJan) / 86400000) + 1;
-    const week = Math.ceil(dayOfYear / 7);
-    return `${year}-W${String(week).padStart(2, '0')}`;
-  }
-
-  async function loadData() {
-    const {data, error} = await supabaseClient
-      .from('work_log')
-      .select('work_date, hours')
-      .order('work_date', {ascending: true});
-
-    if (error) {
-      console.error('Supabase error:', error);
-      historyBody.innerHTML = `<tr><td colspan="4">${error.message}</td></tr>`;
-      bonusBadge.textContent = 'Error';
-      bonusBadge.className = 'badge red';
-      return;
+  /* ---------------------------- GROUP BY WEEKS --------------------------- */
+  function groupWeeks(daysObj) {
+    // Build week buckets keyed by Monday date string
+    const dates = Object.keys(daysObj).sort(); // ascending
+    const weeks = new Map(); // key: mondayStr -> { monDate, friDate, total, days:[] }
+    for (const ds of dates) {
+      const d = new Date(ds + 'T00:00:00');
+      const mon = getMonday(d);
+      const fri = addDays(mon,4);
+      const key = formatDate(mon);
+      if (!weeks.has(key)) weeks.set(key, { mon, fri, days: [], total: 0 });
+      const hours = Number(daysObj[ds]) || 0;
+      weeks.get(key).days.push({ date: ds, hours });
+      weeks.get(key).total += hours;
     }
+    // Sort by friday ascending
+    return Array.from(weeks.values()).sort((a,b)=>a.fri-b.fri);
+  }
 
-    allDays = {};
-    data.forEach(row => {
-      allDays[row.work_date] = Number(row.hours);
+  function computeBankUntilLastFriday(weeks, anchorFriday) {
+    // Only include weeks whose Friday <= anchorFriday
+    const included = weeks.filter(w => atMidnight(w.fri) <= atMidnight(anchorFriday));
+
+    // Compute cumulative bank; label reverse W# with W1 = most recent included week
+    let bank = 0;
+    included.forEach(w => {
+      w.delta = w.total - TARGET;
+      bank += w.delta;
+      w.bankAfter = bank;
     });
 
-    buildCurrentWeek();
-    buildHistoryAndBank();
+    // We want W1 = last Friday's week, then W2, ... going backwards
+    const desc = [...included].sort((a,b)=>b.fri-a.fri);
+    desc.forEach((w, idx)=> w.wIndex = idx + 1);
+
+    return { included, latestDesc: desc, finalBank: bank };
   }
 
+  /* ---------------------------- UI BUILDERS ----------------------------- */
   function buildCurrentWeek() {
+    // Current week inputs (never counted in bank)
     const today = new Date();
-    const monday = getMonday(today);
-    currentWeekDates = [];
+    const mon = getMonday(today);
+    const fri = addDays(mon,4);
+
+    currentTitle.textContent = `This week (Mon ${mon.toLocaleDateString()} – Fri ${fri.toLocaleDateString()}) — not counted`;
+
     weekGrid.innerHTML = '';
+    const dayNames = ['Mon','Tue','Wed','Thu','Fri'];
+    let sum = 0;
 
-    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    weekTitle.textContent = `Week of ${monday.toLocaleDateString()}`;
-
-    for (let i = 0; i < 5; i++) {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
+    for (let i=0;i<5;i++) {
+      const d = addDays(mon,i);
       const ds = formatDate(d);
-      currentWeekDates.push(ds);
-
       const hours = allDays[ds] ?? '';
 
       const card = document.createElement('div');
       card.className = 'day-card';
       card.innerHTML = `
-        <label>${dayNames[i]} <span style="opacity:.6;font-size:.75rem;">(${ds})</span></label>
-        <input type="number" inputmode="decimal" step="0.25" min="0" value="${hours}">
+        <label>${dayNames[i]} <span class="muted">(${ds})</span></label>
+        <input type="number" step="0.25" min="0" inputmode="decimal" value="${hours}">
       `;
-
       const input = card.querySelector('input');
-      input.addEventListener('input', () => {
-        dirty = true;
-        saveBtn.disabled = false;
-
+      input.addEventListener('input', ()=>{
+        dirty = true; saveBtn.disabled = false;
         const v = input.value === '' ? null : Number(input.value);
-        if (v === null || isNaN(v)) {
-          delete allDays[ds];
-        } else {
-          allDays[ds] = v;
-        }
-
-        updateWeekSummary();
+        if (v === null || isNaN(v)) delete allDays[ds];
+        else allDays[ds] = v;
+        buildCurrentWeek(); // recompute this week's sum
       });
-
       weekGrid.appendChild(card);
+
+      const h = Number(hours);
+      if (!Number.isNaN(h)) sum += h;
     }
 
-    updateWeekSummary();
-  }
-
-  function updateWeekSummary() {
-    let sum = 0;
-    currentWeekDates.forEach(ds => {
-      const h = allDays[ds];
-      if (typeof h === 'number' && !isNaN(h)) sum += h;
-    });
-
-    weekTotalEl.textContent = sum.toFixed(2).replace(/\.00$/, '');
-    const diff = sum - TARGET_HOURS;
-
-    if (diff === 0) {
-      weekStatusEl.textContent = 'Exactly at 20h for this week.';
-    } else if (diff > 0) {
-      weekStatusEl.textContent = `You are +${diff.toFixed(2)}h over target this week.`;
-    } else {
-      weekStatusEl.textContent = `You still need ${(-diff).toFixed(2)}h to hit 20h this week.`;
-    }
-
-    buildHistoryAndBank();
-  }
-
-  function computeWeeks() {
-    const dates = Object.keys(allDays).sort();
-    const weeksMap = {};
-
-    dates.forEach(ds => {
-      const d = new Date(ds + 'T00:00:00');
-      const key = weekKey(d);
-      if (!weeksMap[key]) {
-        weeksMap[key] = {
-          key,
-          days: [],
-          total: 0,
-          monday: getMonday(d)
-        };
-      }
-      const h = allDays[ds];
-      weeksMap[key].days.push({date: ds, hours: h});
-      weeksMap[key].total += h;
-    });
-
-    const weeks = Object.values(weeksMap).sort((a, b) => a.monday - b.monday);
-
-    let bank = 0;
-    weeks.forEach(w => {
-      const delta = w.total - TARGET_HOURS;
-      bank += delta;
-      w.delta = delta;
-      w.bankAfter = bank;
-    });
-
-    return {
-      weeks,
-      finalBank: weeks.length ? weeks[weeks.length - 1].bankAfter : 0
-    };
+    weekTotalE.textContent = sum.toFixed(2).replace(/\.00$/,'');
+    const diff = sum - TARGET;
+    weekHelp.textContent =
+      diff === 0 ? 'Exactly at 20h this week (not counted).'
+      : diff > 0 ? `+${diff.toFixed(2)}h over target (not counted).`
+                 : `${(-diff).toFixed(2)}h to go (not counted).`;
   }
 
   function buildHistoryAndBank() {
-    const {weeks, finalBank} = computeWeeks();
+    const anchor = lastFriday(new Date()); // the last Friday boundary
+    const weeks = groupWeeks(allDays);
+    const { included, latestDesc, finalBank } = computeBankUntilLastFriday(weeks, anchor);
 
-    let cls = 'badge ';
-    if (finalBank < 0) cls += 'red';
-    else if (finalBank === 0) cls += 'yellow';
-    else cls += 'green';
+    // Bank badge
+    bankNote.textContent = `(through ${anchor.toLocaleDateString()})`;
+    const cls = finalBank < 0 ? 'badge red' : finalBank === 0 ? 'badge yellow' : 'badge green';
+    bankBadge.className = cls;
+    bankBadge.textContent =
+      finalBank < 0 ? `${finalBank.toFixed(2)} h in debt`
+      : finalBank === 0 ? '0 h in bank'
+      : `+${finalBank.toFixed(2)} h in bank`;
 
-    bonusBadge.className = cls;
-    const text =
-      finalBank < 0
-        ? `${finalBank.toFixed(2)} h in debt`
-        : finalBank === 0
-          ? '0 h in bank'
-          : `+${finalBank.toFixed(2)} h in bank`;
-    bonusBadge.textContent = text;
-
-    historyBody.innerHTML = '';
-    if (!weeks.length) {
-      historyBody.innerHTML = '<tr><td colspan="4">No data yet.</td></tr>';
+    // History table: show W1 (last Friday’s week) first
+    historyT.innerHTML = '';
+    if (!latestDesc.length) {
+      historyT.innerHTML = '<tr><td colspan="5">No past weeks yet.</td></tr>';
       return;
     }
 
-    weeks.forEach(w => {
+    for (const w of latestDesc) {
+      const end = w.fri;
+      const start = w.mon;
       const tr = document.createElement('tr');
-      const end = new Date(w.monday);
-      end.setDate(end.getDate() + 4);
-      const label = `${w.key} (${w.monday.toLocaleDateString()} – ${end.toLocaleDateString()})`;
+      const weekLabel = `${start.toLocaleDateString()} – ${end.toLocaleDateString()}`;
       const deltaStr = (w.delta >= 0 ? '+' : '') + w.delta.toFixed(2);
-      const bankStr = (w.bankAfter >= 0 ? '+' : '') + w.bankAfter.toFixed(2);
-
+      const bankStr  = (w.bankAfter >= 0 ? '+' : '') + w.bankAfter.toFixed(2);
       tr.innerHTML = `
-        <td>${label}</td>
+        <td>W${w.wIndex}</td>
+        <td>${weekLabel}</td>
         <td>${w.total.toFixed(2)}</td>
         <td>${deltaStr}</td>
         <td>${bankStr}</td>
       `;
-      historyBody.appendChild(tr);
-    });
+      historyT.appendChild(tr);
+    }
   }
 
-  async function saveChanges() {
-    saveBtn.disabled = true;
-
-    const rows = currentWeekDates
-      .filter(ds => typeof allDays[ds] === 'number' && !isNaN(allDays[ds]))
-      .map(ds => ({
-        work_date: ds,
-        hours: allDays[ds]
-      }));
-
-    const {error} = await supabaseClient
+  /* ------------------------------ SAVE/LOAD ----------------------------- */
+  async function loadAll() {
+    const { data, error } = await supabaseClient
       .from('work_log')
-      .upsert(rows, {onConflict: 'work_date'});
+      .select('work_date, hours')
+      .order('work_date', { ascending: true });
 
     if (error) {
-      console.error('Supabase save error:', error);
-      alert('Error saving data: ' + error.message);
-      saveBtn.disabled = false;
+      console.error('Supabase error:', error);
+      historyT.innerHTML = `<tr><td colspan="5">${error.message}</td></tr>`;
+      bankBadge.className = 'badge red';
+      bankBadge.textContent = 'Error';
+      bankNote.textContent = '';
       return;
     }
 
-    dirty = false;
-    await loadData();
+    allDays = {};
+    data.forEach(r => allDays[r.work_date] = Number(r.hours));
+    buildCurrentWeek();
+    buildHistoryAndBank();
   }
 
-  saveBtn.addEventListener('click', saveChanges);
+  async function saveCurrentWeek() {
+    saveBtn.disabled = true;
 
-  window.addEventListener('beforeunload', (e) => {
+    const today = new Date();
+    const mon = getMonday(today);
+    const rows = [];
+    for (let i=0;i<5;i++) {
+      const ds = formatDate(addDays(mon,i));
+      const v = allDays[ds];
+      if (typeof v === 'number' && !Number.isNaN(v)) rows.push({ work_date: ds, hours: v });
+    }
+
+    const { error } = await supabaseClient.from('work_log')
+      .upsert(rows, { onConflict: 'work_date' });
+
+    if (error) {
+      console.error('Supabase save error:', error);
+      alert('Error saving: ' + error.message);
+      saveBtn.disabled = false;
+      return;
+    }
+    dirty = false;
+    await loadAll();
+  }
+
+  saveBtn.addEventListener('click', saveCurrentWeek);
+
+  window.addEventListener('beforeunload', (e)=>{
     if (!dirty) return;
-    e.preventDefault();
-    e.returnValue = '';
+    e.preventDefault(); e.returnValue = '';
   });
 
-  loadData();
+  loadAll();
 </script>
 </body>
 </html>
