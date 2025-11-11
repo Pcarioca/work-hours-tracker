@@ -168,6 +168,7 @@
     }
   </style>
 
+  <!-- Supabase client -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -213,18 +214,17 @@
   <section class="card">
     <h2>Setup</h2>
     <p style="font-size:.8rem;opacity:.8;">
-      Open this file in a text editor and replace
-      <code>supabaseUrl</code> and <code>supabaseKey</code> with your own values from the Supabase project settings.
+      Supabase project: <code>pmapkowimesplgbvrook</code>. If you ever rotate keys, just update them in this file.
     </p>
   </section>
 </main>
 
 <script>
-  // --------- CONFIG: PUT YOUR OWN SUPABASE INFO HERE ----------
-  const supabaseUrl = 'https://YOUR-PROJECT-ID.supabase.co';
-  const supabaseKey = 'YOUR_PUBLIC_ANON_KEY';
+  // --------- SUPABASE CONFIG (YOUR PROJECT) ----------
+  const supabaseUrl = 'https://pmapkowimesplgbvrook.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtYXBrb3dpbWVzcGxnYnZyb29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4MTUwNzYsImV4cCI6MjA3ODM5MTA3Nn0.5_jdBZfEHMq4thAe9UnmDOzAhQRq_9QclnEIjbaoj0M';
   const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-  // ------------------------------------------------------------
+  // ---------------------------------------------------
 
   const TARGET_HOURS = 20;
 
@@ -240,7 +240,6 @@
   let currentWeekDates = []; // list of date strings for current week
   let dirty = false;
 
-  // Helpers
   function getMonday(d) {
     const date = new Date(d);
     const day = date.getDay(); // 0 Sun, 1 Mon, ...
@@ -251,7 +250,7 @@
   }
 
   function formatDate(d) {
-    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+    return d.toISOString().slice(0, 10);
   }
 
   function weekKey(d) {
@@ -270,8 +269,8 @@
       .order('work_date', {ascending: true});
 
     if (error) {
-      console.error(error);
-      historyBody.innerHTML = `<tr><td colspan="4">Error loading data. Check Supabase config.</td></tr>`;
+      console.error('Supabase error:', error);
+      historyBody.innerHTML = `<tr><td colspan="4">${error.message}</td></tr>`;
       bonusBadge.textContent = 'Error';
       bonusBadge.className = 'badge red';
       return;
@@ -391,7 +390,6 @@
   function buildHistoryAndBank() {
     const {weeks, finalBank} = computeWeeks();
 
-    // Badge colour
     let cls = 'badge ';
     if (finalBank < 0) cls += 'red';
     else if (finalBank === 0) cls += 'yellow';
@@ -406,7 +404,6 @@
           : `+${finalBank.toFixed(2)} h in bank`;
     bonusBadge.textContent = text;
 
-    // History table
     historyBody.innerHTML = '';
     if (!weeks.length) {
       historyBody.innerHTML = '<tr><td colspan="4">No data yet.</td></tr>';
@@ -446,19 +443,18 @@
       .upsert(rows, {onConflict: 'work_date'});
 
     if (error) {
-      console.error(error);
-      alert('Error saving data. Check console / Supabase config.');
+      console.error('Supabase save error:', error);
+      alert('Error saving data: ' + error.message);
       saveBtn.disabled = false;
       return;
     }
 
     dirty = false;
-    await loadData(); // reload clean
+    await loadData();
   }
 
   saveBtn.addEventListener('click', saveChanges);
 
-  // Warn when leaving page with unsaved edits
   window.addEventListener('beforeunload', (e) => {
     if (!dirty) return;
     e.preventDefault();
