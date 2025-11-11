@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Work Hours Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #050814;
+      color: #f5f6fa;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .card {
+      background: #111827;
+      border-radius: 1rem;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin: 0 0 .5rem;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      margin-top: 0;
+      margin-bottom: .4rem;
+    }
+
+    p {
+      margin-top: 0;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: .25rem .75rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: .9rem;
+    }
+
+    .badge.red {
+      background: #3b0b16;
+      color: #ff6b81;
+    }
+
+    .badge.yellow {
+      background: #3b2e08;
+      color: #ffeaa7;
+    }
+
+    .badge.green {
+      background: #052a1a;
+      color: #55efc4;
+    }
+
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: .5rem;
+    }
+
+    .day-card {
+      background: #1f2937;
+      border-radius: .75rem;
+      padding: .5rem .75rem;
+    }
+
+    .day-card label {
+      display: block;
+      font-size: .8rem;
+      opacity: .8;
+      margin-bottom: .25rem;
+    }
+
+    .day-card input {
+      width: 100%;
+      padding: .35rem .4rem;
+      border-radius: .5rem;
+      border: 1px solid #374151;
+      background: #050814;
+      color: #f5f6fa;
+      font-size: .9rem;
+    }
+
+    .summary-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: .75rem;
+      font-size: .9rem;
+    }
+
+    button {
+      border: none;
+      border-radius: .75rem;
+      padding: .5rem .9rem;
+      font-size: .9rem;
+      font-weight: 600;
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, .5);
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .85rem;
+      margin-top: .5rem;
+    }
+
+    .table th,
+    .table td {
+      padding: .3rem .4rem;
+      border-bottom: 1px solid #252b3b;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .table th {
+      font-weight: 600;
+      opacity: .85;
+    }
+
+    code {
+      background: #020617;
+      padding: 0 .25rem;
+      border-radius: .25rem;
+      font-size: .85em;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.3rem;
+      }
+
+      .card {
+        padding: .9rem;
+      }
+    }
+  </style>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<main>
+  <header class="card">
+    <h1>Work Hours Tracker</h1>
+    <p style="font-size:.9rem;margin-bottom:.5rem;">
+      Target: <strong>20 h / week</strong>. Overtime goes into your bank; missing time comes out of it.
+    </p>
+    <div id="bonusBadge" class="badge yellow">Loading…</div>
+  </header>
+
+  <section id="currentWeekCard" class="card">
+    <h2 id="weekTitle">This week</h2>
+    <div class="week-grid" id="weekGrid"></div>
+
+    <div class="summary-row">
+      <div>
+        <div>Worked this week: <strong><span id="weekTotal">0</span> h</strong></div>
+        <div id="weekStatus" style="opacity:.85;"></div>
+      </div>
+      <button id="saveBtn" disabled>Save changes</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Past weeks</h2>
+    <table class="table" id="historyTable">
+      <thead>
+      <tr>
+        <th>Week</th>
+        <th>Total hours</th>
+        <th>Δ vs 20h</th>
+        <th>Bank after week</th>
+      </tr>
+      </thead>
+      <tbody id="historyBody">
+      <tr><td colspan="4">Loading…</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Setup</h2>
+    <p style="font-size:.8rem;opacity:.8;">
+      Open this file in a text editor and replace
+      <code>supabaseUrl</code> and <code>supabaseKey</code> with your own values from the Supabase project settings.
+    </p>
+  </section>
+</main>
+
+<script>
+  // --------- CONFIG: PUT YOUR OWN SUPABASE INFO HERE ----------
+  const supabaseUrl = 'https://YOUR-PROJECT-ID.supabase.co';
+  const supabaseKey = 'YOUR_PUBLIC_ANON_KEY';
+  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+  // ------------------------------------------------------------
+
+  const TARGET_HOURS = 20;
+
+  const weekGrid = document.getElementById('weekGrid');
+  const weekTitle = document.getElementById('weekTitle');
+  const weekTotalEl = document.getElementById('weekTotal');
+  const weekStatusEl = document.getElementById('weekStatus');
+  const bonusBadge = document.getElementById('bonusBadge');
+  const saveBtn = document.getElementById('saveBtn');
+  const historyBody = document.getElementById('historyBody');
+
+  let allDays = {};          // "YYYY-MM-DD" -> hours
+  let currentWeekDates = []; // list of date strings for current week
+  let dirty = false;
+
+  // Helpers
+  function getMonday(d) {
+    const date = new Date(d);
+    const day = date.getDay(); // 0 Sun, 1 Mon, ...
+    const diff = (day === 0 ? -6 : 1) - day;
+    date.setDate(date.getDate() + diff);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  function formatDate(d) {
+    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  }
+
+  function weekKey(d) {
+    const monday = getMonday(d);
+    const year = monday.getFullYear();
+    const oneJan = new Date(year, 0, 1);
+    const dayOfYear = Math.floor((monday - oneJan) / 86400000) + 1;
+    const week = Math.ceil(dayOfYear / 7);
+    return `${year}-W${String(week).padStart(2, '0')}`;
+  }
+
+  async function loadData() {
+    const {data, error} = await supabaseClient
+      .from('work_log')
+      .select('work_date, hours')
+      .order('work_date', {ascending: true});
+
+    if (error) {
+      console.error(error);
+      historyBody.innerHTML = `<tr><td colspan="4">Error loading data. Check Supabase config.</td></tr>`;
+      bonusBadge.textContent = 'Error';
+      bonusBadge.className = 'badge red';
+      return;
+    }
+
+    allDays = {};
+    data.forEach(row => {
+      allDays[row.work_date] = Number(row.hours);
+    });
+
+    buildCurrentWeek();
+    buildHistoryAndBank();
+  }
+
+  function buildCurrentWeek() {
+    const today = new Date();
+    const monday = getMonday(today);
+    currentWeekDates = [];
+    weekGrid.innerHTML = '';
+
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    weekTitle.textContent = `Week of ${monday.toLocaleDateString()}`;
+
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const ds = formatDate(d);
+      currentWeekDates.push(ds);
+
+      const hours = allDays[ds] ?? '';
+
+      const card = document.createElement('div');
+      card.className = 'day-card';
+      card.innerHTML = `
+        <label>${dayNames[i]} <span style="opacity:.6;font-size:.75rem;">(${ds})</span></label>
+        <input type="number" inputmode="decimal" step="0.25" min="0" value="${hours}">
+      `;
+
+      const input = card.querySelector('input');
+      input.addEventListener('input', () => {
+        dirty = true;
+        saveBtn.disabled = false;
+
+        const v = input.value === '' ? null : Number(input.value);
+        if (v === null || isNaN(v)) {
+          delete allDays[ds];
+        } else {
+          allDays[ds] = v;
+        }
+
+        updateWeekSummary();
+      });
+
+      weekGrid.appendChild(card);
+    }
+
+    updateWeekSummary();
+  }
+
+  function updateWeekSummary() {
+    let sum = 0;
+    currentWeekDates.forEach(ds => {
+      const h = allDays[ds];
+      if (typeof h === 'number' && !isNaN(h)) sum += h;
+    });
+
+    weekTotalEl.textContent = sum.toFixed(2).replace(/\.00$/, '');
+    const diff = sum - TARGET_HOURS;
+
+    if (diff === 0) {
+      weekStatusEl.textContent = 'Exactly at 20h for this week.';
+    } else if (diff > 0) {
+      weekStatusEl.textContent = `You are +${diff.toFixed(2)}h over target this week.`;
+    } else {
+      weekStatusEl.textContent = `You still need ${(-diff).toFixed(2)}h to hit 20h this week.`;
+    }
+
+    buildHistoryAndBank();
+  }
+
+  function computeWeeks() {
+    const dates = Object.keys(allDays).sort();
+    const weeksMap = {};
+
+    dates.forEach(ds => {
+      const d = new Date(ds + 'T00:00:00');
+      const key = weekKey(d);
+      if (!weeksMap[key]) {
+        weeksMap[key] = {
+          key,
+          days: [],
+          total: 0,
+          monday: getMonday(d)
+        };
+      }
+      const h = allDays[ds];
+      weeksMap[key].days.push({date: ds, hours: h});
+      weeksMap[key].total += h;
+    });
+
+    const weeks = Object.values(weeksMap).sort((a, b) => a.monday - b.monday);
+
+    let bank = 0;
+    weeks.forEach(w => {
+      const delta = w.total - TARGET_HOURS;
+      bank += delta;
+      w.delta = delta;
+      w.bankAfter = bank;
+    });
+
+    return {
+      weeks,
+      finalBank: weeks.length ? weeks[weeks.length - 1].bankAfter : 0
+    };
+  }
+
+  function buildHistoryAndBank() {
+    const {weeks, finalBank} = computeWeeks();
+
+    // Badge colour
+    let cls = 'badge ';
+    if (finalBank < 0) cls += 'red';
+    else if (finalBank === 0) cls += 'yellow';
+    else cls += 'green';
+
+    bonusBadge.className = cls;
+    const text =
+      finalBank < 0
+        ? `${finalBank.toFixed(2)} h in debt`
+        : finalBank === 0
+          ? '0 h in bank'
+          : `+${finalBank.toFixed(2)} h in bank`;
+    bonusBadge.textContent = text;
+
+    // History table
+    historyBody.innerHTML = '';
+    if (!weeks.length) {
+      historyBody.innerHTML = '<tr><td colspan="4">No data yet.</td></tr>';
+      return;
+    }
+
+    weeks.forEach(w => {
+      const tr = document.createElement('tr');
+      const end = new Date(w.monday);
+      end.setDate(end.getDate() + 4);
+      const label = `${w.key} (${w.monday.toLocaleDateString()} – ${end.toLocaleDateString()})`;
+      const deltaStr = (w.delta >= 0 ? '+' : '') + w.delta.toFixed(2);
+      const bankStr = (w.bankAfter >= 0 ? '+' : '') + w.bankAfter.toFixed(2);
+
+      tr.innerHTML = `
+        <td>${label}</td>
+        <td>${w.total.toFixed(2)}</td>
+        <td>${deltaStr}</td>
+        <td>${bankStr}</td>
+      `;
+      historyBody.appendChild(tr);
+    });
+  }
+
+  async function saveChanges() {
+    saveBtn.disabled = true;
+
+    const rows = currentWeekDates
+      .filter(ds => typeof allDays[ds] === 'number' && !isNaN(allDays[ds]))
+      .map(ds => ({
+        work_date: ds,
+        hours: allDays[ds]
+      }));
+
+    const {error} = await supabaseClient
+      .from('work_log')
+      .upsert(rows, {onConflict: 'work_date'});
+
+    if (error) {
+      console.error(error);
+      alert('Error saving data. Check console / Supabase config.');
+      saveBtn.disabled = false;
+      return;
+    }
+
+    dirty = false;
+    await loadData(); // reload clean
+  }
+
+  saveBtn.addEventListener('click', saveChanges);
+
+  // Warn when leaving page with unsaved edits
+  window.addEventListener('beforeunload', (e) => {
+    if (!dirty) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+
+  loadData();
+</script>
+</body>
+</html>
