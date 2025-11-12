@@ -1,304 +1,523 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <title>Work Hours Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    :root { color-scheme: dark; }
-    * { box-sizing: border-box; }
+    :root {
+      --bg: #050814;
+      --card: #111827;
+      --muted: #9aa3b2;
+      --text: #f5f6fa;
+      --border: #252b3b;
+      --input-bg: #050814;
+      --input-border: #374151;
+      --accent: #2563eb;
+      --badge-red-bg:#3b0b16; --badge-red:#ff6b81;
+      --badge-yellow-bg:#3b2e08; --badge-yellow:#ffeaa7;
+      --badge-green-bg:#052a1a; --badge-green:#55efc4;
+    }
+    [data-theme="light"] {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --muted: #5f6b7a;
+      --text: #0b1020;
+      --border: #e5e7eb;
+      --input-bg: #ffffff;
+      --input-border: #cfd6df;
+      --accent: #2563eb;
+      --badge-red-bg:#ffe3e6; --badge-red:#b0002a;
+      --badge-yellow-bg:#fff4d6; --badge-yellow:#7a5b00;
+      --badge-green-bg:#e8fbf4; --badge-green:#0d7a5a;
+    }
 
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
-      background: #050814;
-      color: #f5f6fa;
+      background: var(--bg);
+      color: var(--text);
     }
+    main { max-width: 1000px; margin: 0 auto; padding: 1rem; }
 
-    main { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    .row { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+    .spacer { flex:1 1 auto; }
 
     .card {
-      background: #111827;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 1rem;
       padding: 1rem 1.25rem;
       margin-bottom: 1rem;
-      box-shadow: 0 12px 30px rgba(0,0,0,.45);
+      box-shadow: 0 12px 30px rgba(0,0,0,.18);
     }
 
-    h1 { font-size: 1.6rem; margin: 0 0 .5rem; }
+    h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
     h2 { font-size: 1.1rem; margin: 0 0 .4rem; }
-    p { margin: 0; }
+    p  { margin: 0; }
+    .muted { color: var(--muted); }
 
     .badge {
-      display: inline-block;
-      padding: .25rem .75rem;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: .9rem;
+      display:inline-block; padding:.25rem .7rem; border-radius:999px;
+      font-weight:700; font-size:.9rem;
     }
-    .red   { background:#3b0b16; color:#ff6b81; }
-    .yellow{ background:#3b2e08; color:#ffeaa7; }
-    .green { background:#052a1a; color:#55efc4; }
+    .red   { background:var(--badge-red-bg); color:var(--badge-red); }
+    .yellow{ background:var(--badge-yellow-bg); color:var(--badge-yellow); }
+    .green { background:var(--badge-green-bg); color:var(--badge-green); }
 
-    .muted { opacity:.75; font-size:.85rem; }
+    .btn {
+      border:none; border-radius:.7rem; padding:.55rem .95rem;
+      background: var(--accent); color:#fff; font-weight:700; cursor:pointer;
+      box-shadow: 0 6px 14px rgba(0,0,0,.25);
+    }
+    .btn:disabled { opacity:.5; cursor:default; box-shadow:none; }
+    .btn-ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
 
-    .week-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px,1fr));
-      gap: .5rem;
+    input[type="number"], input[type="time"], input[type="month"], input[type="date"], input[type="text"] {
+      background: var(--input-bg); color: var(--text);
+      border: 1px solid var(--input-border);
+      border-radius: .6rem; padding:.45rem .55rem; font-size:.95rem;
     }
-
-    .day-card {
-      background:#1f2937;
-      border-radius:.75rem;
-      padding:.55rem .75rem;
-    }
-    .day-card label {
-      display:block; font-size:.8rem; opacity:.85; margin-bottom:.25rem;
-    }
-    .day-card input {
-      width:100%;
-      padding:.4rem .5rem;
-      border-radius:.5rem;
-      border:1px solid #374151;
-      background:#050814; color:#f5f6fa; font-size:.95rem;
-    }
-
-    .summary-row {
-      display:flex; flex-wrap:wrap; gap:.6rem;
-      align-items:center; justify-content:space-between;
-      margin-top:.75rem; font-size:.95rem;
-    }
-
-    button {
-      border:none; border-radius:.75rem;
-      padding:.55rem .95rem;
-      font-weight:700; font-size:.95rem;
-      background:#2563eb; color:#fff; cursor:pointer;
-      box-shadow:0 6px 14px rgba(0,0,0,.45);
-    }
-    button:disabled { opacity:.5; cursor:default; box-shadow:none; }
+    label { font-size:.85rem; }
+    .grid-5 { display:grid; grid-template-columns: repeat(5, minmax(120px,1fr)); gap:.5rem; }
+    .day-card { background:var(--card); border:1px solid var(--border); border-radius:.75rem; padding:.55rem .75rem; }
+    .day-card label { display:block; margin-bottom:.25rem; color:var(--muted); }
 
     table { width:100%; border-collapse:collapse; font-size:.86rem; }
-    th, td { padding:.35rem .45rem; border-bottom:1px solid #252b3b; text-align:left; white-space:nowrap; }
-    th { font-weight:700; opacity:.85; }
+    th, td { padding:.35rem .45rem; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; }
+    th { font-weight:700; color:var(--muted); }
 
-    @media (max-width:600px) {
-      h1 { font-size:1.35rem; }
-      .card { padding:.9rem; }
-    }
+    .logo { height:42px; object-fit:contain; }
+
+    @media (max-width:700px){ .grid-5 { grid-template-columns: repeat(2, 1fr); } }
   </style>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <main>
+  <!-- Header -->
   <header class="card">
-    <h1>Work Hours Tracker</h1>
-    <p class="muted" style="margin-bottom:.5rem">
-      Target: <strong>20 h / week</strong>.
-      Bank updates <strong>only up to last Friday</strong>. Current week is shown but not counted.
-    </p>
-    <div id="bankBadge" class="badge yellow">Loading…</div>
-    <div class="muted" id="bankNote" style="margin-left:.5rem; display:inline-block"></div>
+    <div class="row">
+      <div>
+        <h1>Work Hours Tracker</h1>
+        <p class="muted">Target: <strong>4 h / day</strong>. Bank is computed from daily deltas (hours − 4).</p>
+      </div>
+      <div class="spacer"></div>
+      <img class="logo" alt="Logo" src="https://static.wixstatic.com/media/1a37a8_371b4c547bf749fea5456edd71552380~mv2.png/v1/fill/w_207,h_97,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/White%20and%20Blue%20Modern%20Data%20Analytics%20Services%20Facebook%20Cover%20(7).png" />
+    </div>
+
+    <div class="row" style="margin-top:.6rem">
+      <div id="bankBadge" class="badge yellow">Loading…</div>
+      <div id="bankScope" class="muted"></div>
+      <div class="spacer"></div>
+
+      <label class="row">
+        <input id="excludeCurrentWeek" type="checkbox" checked />
+        <span class="muted">Exclude current week from bank</span>
+      </label>
+
+      <button id="themeBtn" class="btn-ghost">Toggle theme</button>
+
+      <button id="lockBtn" class="btn">Unlock to edit</button>
+    </div>
   </header>
 
+  <!-- Today Helper -->
   <section class="card">
-    <h2 id="currentTitle">This week (not counted)</h2>
-    <div id="weekGrid" class="week-grid"></div>
-    <div class="summary-row">
-      <div>
-        <div>Worked this week: <strong><span id="weekTotal">0</span> h</strong></div>
-        <div id="weekHelp" class="muted"></div>
-      </div>
-      <button id="saveBtn" disabled>Save changes</button>
+    <h2>Today helper</h2>
+    <p class="muted" style="margin-bottom:.5rem">Use start–end or the live timer. Adds to today’s hours (you can still edit manually).</p>
+
+    <div class="row" style="gap:1rem; margin:.5rem 0;">
+      <label>Start <input id="startTime" type="time" /></label>
+      <label>End <input id="endTime" type="time" /></label>
+      <button id="addSessionBtn" class="btn">Add session</button>
+
+      <div class="spacer"></div>
+
+      <button id="timerBtn" class="btn">Start timer</button>
+      <div id="timerStatus" class="muted">00:00:00</div>
+      <button id="timerSaveBtn" class="btn" disabled>Stop & save</button>
     </div>
   </section>
 
+  <!-- Current Week (editable) -->
   <section class="card">
-    <h2>Past weeks (counted up to last Friday)</h2>
+    <div class="row">
+      <h2 id="currentTitle">This week</h2>
+      <div class="spacer"></div>
+      <button id="saveBtn" class="btn" disabled>Save changes</button>
+    </div>
+    <div id="weekGrid" class="grid-5" style="margin-top:.5rem"></div>
+    <div class="row" style="margin-top:.6rem">
+      <div>Worked this week: <strong><span id="weekHours">0</span> h</strong>
+        <span id="weekDelta" class="muted"></span></div>
+    </div>
+  </section>
+
+  <!-- Month editor -->
+  <section class="card">
+    <div class="row">
+      <h2>Edit any month</h2>
+      <div class="spacer"></div>
+      <label class="row">
+        <span class="muted">Month</span>
+        <input id="monthPicker" type="month" />
+      </label>
+      <button id="saveMonthBtn" class="btn" disabled>Save month changes</button>
+    </div>
+
+    <table style="margin-top:.6rem">
+      <thead>
+      <tr>
+        <th>Date</th><th>Weekday</th><th>Hours</th><th>Δ vs 4h</th>
+      </tr>
+      </thead>
+      <tbody id="monthBody">
+      <tr><td colspan="4">Select a month.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Bank & history (daily-based) -->
+  <section class="card">
+    <h2>History (daily-based → weekly rollups)</h2>
     <table>
       <thead>
       <tr>
-        <th>W#</th>
-        <th>Week (Mon–Fri)</th>
-        <th>Total</th>
-        <th>Δ vs 20h</th>
+        <th>Week</th>
+        <th>Mon–Fri total</th>
+        <th>Week Δ (Σ daily)</th>
         <th>Bank after week</th>
       </tr>
       </thead>
       <tbody id="historyBody">
-      <tr><td colspan="5">Loading…</td></tr>
+      <tr><td colspan="4">Loading…</td></tr>
       </tbody>
     </table>
   </section>
 </main>
 
 <script>
-  /* ------------------------- SUPABASE CONFIG ------------------------- */
+  /* ----------------- SUPABASE CONFIG ----------------- */
   const supabaseUrl = 'https://pmapkowimesplgbvrook.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtYXBrb3dpbWVzcGxnYnZyb29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4MTUwNzYsImV4cCI6MjA3ODM5MTA3Nn0.5_jdBZfEHMq4thAe9UnmDOzAhQRq_9QclnEIjbaoj0M';
   const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-  /* ------------------------------------------------------------------ */
+  /* --------------------------------------------------- */
 
-  const TARGET = 20;
+  const DAILY_TARGET = 4;
 
-  const bankBadge  = document.getElementById('bankBadge');
-  const bankNote   = document.getElementById('bankNote');
-  const historyT   = document.getElementById('historyBody');
-  const weekGrid   = document.getElementById('weekGrid');
-  const weekTotalE = document.getElementById('weekTotal');
-  const weekHelp   = document.getElementById('weekHelp');
-  const saveBtn    = document.getElementById('saveBtn');
+  // DOM
+  const lockBtn = document.getElementById('lockBtn');
+  const themeBtn = document.getElementById('themeBtn');
+  const excludeCurrentWeek = document.getElementById('excludeCurrentWeek');
+  const bankBadge = document.getElementById('bankBadge');
+  const bankScope = document.getElementById('bankScope');
+
+  const weekGrid = document.getElementById('weekGrid');
   const currentTitle = document.getElementById('currentTitle');
+  const saveBtn = document.getElementById('saveBtn');
+  const weekHoursEl = document.getElementById('weekHours');
+  const weekDeltaEl = document.getElementById('weekDelta');
 
-  let allDays = {};       // 'YYYY-MM-DD' -> number
-  let dirty = false;
+  const startTimeEl = document.getElementById('startTime');
+  const endTimeEl = document.getElementById('endTime');
+  const addSessionBtn = document.getElementById('addSessionBtn');
+  const timerBtn = document.getElementById('timerBtn');
+  const timerStatus = document.getElementById('timerStatus');
+  const timerSaveBtn = document.getElementById('timerSaveBtn');
 
-  /* ---------------------------- DATE HELPERS ---------------------------- */
+  const monthPicker = document.getElementById('monthPicker');
+  const monthBody = document.getElementById('monthBody');
+  const saveMonthBtn = document.getElementById('saveMonthBtn');
+
+  const historyBody = document.getElementById('historyBody');
+
+  // State
+  let canEdit = false;
+  let allDays = {}; // 'YYYY-MM-DD' -> number (hours)
+  let dirtyDates = new Set(); // dates edited anywhere
+
+  // Theme toggle
+  themeBtn.onclick = () => {
+    const root = document.documentElement;
+    const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+  };
+
+  // Lock/unlock
+  lockBtn.onclick = () => {
+    if (canEdit) { canEdit = false; lockBtn.textContent = 'Unlock to edit'; updateEditability(); return; }
+    const pass = prompt('Enter password to edit:');
+    if (pass === 'student') {
+      canEdit = true; lockBtn.textContent = 'Lock (read-only)';
+      updateEditability();
+    } else {
+      alert('Wrong password.');
+    }
+  };
+  function updateEditability() {
+    document.querySelectorAll('input,button').forEach(el => {
+      const id = el.id || '';
+      const whitelist = ['themeBtn']; // always usable
+      const isViewer = (id==='themeBtn');
+      if (isViewer || id==='excludeCurrentWeek') return;
+      if (id==='monthPicker') return; // month selection allowed in read-only
+      // Read-only disables these:
+      if (!canEdit && (el.tagName==='INPUT' || el.classList.contains('btn'))) {
+        if (id!=='themeBtn' && id!=='excludeCurrentWeek' && id!=='monthPicker') {
+          el.disabled = true;
+        }
+      } else {
+        el.disabled = false;
+      }
+    });
+    // Keep timer safe
+    if (!canEdit) { timerSaveBtn.disabled = true; }
+  }
+
+  // Date helpers
   function atMidnight(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
   function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
-  function getMonday(d) {
-    const x = atMidnight(d);
-    const day = x.getDay(); // 0 Sun, 1 Mon ... 6 Sat
-    const diff = (day === 0 ? -6 : 1) - day;
-    return addDays(x, diff);
-  }
-  function fridayOfWeek(d){ return addDays(getMonday(d), 4); }
-  function lastFriday(today) {
-    const fri = fridayOfWeek(today);
-    // If we're past Friday (Sat or Sun), last Friday is this week's Friday.
-    // Otherwise (Mon–Fri), last Friday is previous week's Friday.
-    if (atMidnight(today) > fri) return fri;
-    return addDays(fri, -7);
-  }
+  function getMonday(d){ const x=atMidnight(d); const day=x.getDay(); const diff=(day===0?-6:1)-day; return addDays(x,diff); }
+  function fridayOf(d){ return addDays(getMonday(d),4); }
   function formatDate(d){ return d.toISOString().slice(0,10); }
+  function weekdayName(d){ return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]; }
 
-  /* ---------------------------- GROUP BY WEEKS --------------------------- */
-  function groupWeeks(daysObj) {
-    // Build week buckets keyed by Monday date string
-    const dates = Object.keys(daysObj).sort(); // ascending
-    const weeks = new Map(); // key: mondayStr -> { monDate, friDate, total, days:[] }
-    for (const ds of dates) {
-      const d = new Date(ds + 'T00:00:00');
-      const mon = getMonday(d);
-      const fri = addDays(mon,4);
-      const key = formatDate(mon);
-      if (!weeks.has(key)) weeks.set(key, { mon, fri, days: [], total: 0 });
-      const hours = Number(daysObj[ds]) || 0;
-      weeks.get(key).days.push({ date: ds, hours });
-      weeks.get(key).total += hours;
-    }
-    // Sort by friday ascending
-    return Array.from(weeks.values()).sort((a,b)=>a.fri-b.fri);
-  }
-
-  function computeBankUntilLastFriday(weeks, anchorFriday) {
-    // Only include weeks whose Friday <= anchorFriday
-    const included = weeks.filter(w => atMidnight(w.fri) <= atMidnight(anchorFriday));
-
-    // Compute cumulative bank; label reverse W# with W1 = most recent included week
-    let bank = 0;
-    included.forEach(w => {
-      w.delta = w.total - TARGET;
-      bank += w.delta;
-      w.bankAfter = bank;
-    });
-
-    // We want W1 = last Friday's week, then W2, ... going backwards
-    const desc = [...included].sort((a,b)=>b.fri-a.fri);
-    desc.forEach((w, idx)=> w.wIndex = idx + 1);
-
-    return { included, latestDesc: desc, finalBank: bank };
-  }
-
-  /* ---------------------------- UI BUILDERS ----------------------------- */
+  // Build current week editor
   function buildCurrentWeek() {
-    // Current week inputs (never counted in bank)
     const today = new Date();
     const mon = getMonday(today);
     const fri = addDays(mon,4);
-
-    currentTitle.textContent = `This week (Mon ${mon.toLocaleDateString()} – Fri ${fri.toLocaleDateString()}) — not counted`;
+    currentTitle.textContent = `This week (${mon.toLocaleDateString()} – ${fri.toLocaleDateString()})`;
 
     weekGrid.innerHTML = '';
-    const dayNames = ['Mon','Tue','Wed','Thu','Fri'];
-    let sum = 0;
+    const names = ['Mon','Tue','Wed','Thu','Fri'];
+    let weekSum = 0;
 
     for (let i=0;i<5;i++) {
       const d = addDays(mon,i);
       const ds = formatDate(d);
       const hours = allDays[ds] ?? '';
 
-      const card = document.createElement('div');
-      card.className = 'day-card';
-      card.innerHTML = `
-        <label>${dayNames[i]} <span class="muted">(${ds})</span></label>
-        <input type="number" step="0.25" min="0" inputmode="decimal" value="${hours}">
+      const div = document.createElement('div');
+      div.className = 'day-card';
+      div.innerHTML = `
+        <label>${names[i]} <span class="muted">(${ds})</span></label>
+        <input data-date="${ds}" type="number" step="0.25" min="0" value="${hours}">
+        <div class="muted" style="margin-top:.25rem">
+          Δ: <span id="delta-${ds}">${fmtDelta((Number(hours)||0)-DAILY_TARGET)}</span>
+        </div>
       `;
-      const input = card.querySelector('input');
-      input.addEventListener('input', ()=>{
-        dirty = true; saveBtn.disabled = false;
-        const v = input.value === '' ? null : Number(input.value);
-        if (v === null || isNaN(v)) delete allDays[ds];
-        else allDays[ds] = v;
-        buildCurrentWeek(); // recompute this week's sum
-      });
-      weekGrid.appendChild(card);
+      const input = div.querySelector('input');
+      input.oninput = () => {
+        const v = input.value===''?null:Number(input.value);
+        if (v===null||Number.isNaN(v)) { delete allDays[ds]; }
+        else { allDays[ds]=v; }
+        document.getElementById(`delta-${ds}`).textContent = fmtDelta((Number(allDays[ds])||0)-DAILY_TARGET);
+        dirtyDates.add(ds); saveBtn.disabled=false;
+        buildCurrentWeekSummary();
+      };
+      weekGrid.appendChild(div);
 
-      const h = Number(hours);
-      if (!Number.isNaN(h)) sum += h;
+      const n = Number(hours); if (!Number.isNaN(n)) weekSum += n;
     }
-
-    weekTotalE.textContent = sum.toFixed(2).replace(/\.00$/,'');
-    const diff = sum - TARGET;
-    weekHelp.textContent =
-      diff === 0 ? 'Exactly at 20h this week (not counted).'
-      : diff > 0 ? `+${diff.toFixed(2)}h over target (not counted).`
-                 : `${(-diff).toFixed(2)}h to go (not counted).`;
+    buildCurrentWeekSummary();
+  }
+  function buildCurrentWeekSummary() {
+    const today = new Date(); const mon=getMonday(today);
+    let sum=0, delta=0;
+    for (let i=0;i<5;i++){
+      const ds = formatDate(addDays(mon,i));
+      const h = Number(allDays[ds]); if (!Number.isNaN(h)) { sum += h; delta += (h-DAILY_TARGET); }
+    }
+    weekHoursEl.textContent = trim(sum);
+    weekDeltaEl.textContent = ` (Δ week: ${delta>=0?'+':''}${trim(delta)}h)`;
   }
 
-  function buildHistoryAndBank() {
-    const anchor = lastFriday(new Date()); // the last Friday boundary
-    const weeks = groupWeeks(allDays);
-    const { included, latestDesc, finalBank } = computeBankUntilLastFriday(weeks, anchor);
-
-    // Bank badge
-    bankNote.textContent = `(through ${anchor.toLocaleDateString()})`;
-    const cls = finalBank < 0 ? 'badge red' : finalBank === 0 ? 'badge yellow' : 'badge green';
-    bankBadge.className = cls;
-    bankBadge.textContent =
-      finalBank < 0 ? `${finalBank.toFixed(2)} h in debt`
-      : finalBank === 0 ? '0 h in bank'
-      : `+${finalBank.toFixed(2)} h in bank`;
-
-    // History table: show W1 (last Friday’s week) first
-    historyT.innerHTML = '';
-    if (!latestDesc.length) {
-      historyT.innerHTML = '<tr><td colspan="5">No past weeks yet.</td></tr>';
-      return;
-    }
-
-    for (const w of latestDesc) {
-      const end = w.fri;
-      const start = w.mon;
+  // Month editor
+  function buildMonth(year, monthIdx) { // monthIdx 0-11
+    monthBody.innerHTML = '';
+    const first = new Date(year, monthIdx, 1);
+    const days = new Date(year, monthIdx+1, 0).getDate();
+    for (let d=1; d<=days; d++) {
+      const date = new Date(year, monthIdx, d);
+      const ds = formatDate(date);
+      const h = allDays[ds] ?? '';
       const tr = document.createElement('tr');
-      const weekLabel = `${start.toLocaleDateString()} – ${end.toLocaleDateString()}`;
-      const deltaStr = (w.delta >= 0 ? '+' : '') + w.delta.toFixed(2);
-      const bankStr  = (w.bankAfter >= 0 ? '+' : '') + w.bankAfter.toFixed(2);
       tr.innerHTML = `
-        <td>W${w.wIndex}</td>
-        <td>${weekLabel}</td>
-        <td>${w.total.toFixed(2)}</td>
-        <td>${deltaStr}</td>
-        <td>${bankStr}</td>
+        <td>${ds}</td>
+        <td>${weekdayName(date)}</td>
+        <td><input ${canEdit?'':'disabled'} data-date="${ds}" type="number" step="0.25" min="0" value="${h}" style="width:7rem"></td>
+        <td class="muted" id="mdelta-${ds}">${fmtDelta((Number(h)||0)-DAILY_TARGET)}</td>
       `;
-      historyT.appendChild(tr);
+      const input = tr.querySelector('input');
+      input.oninput = () => {
+        const v = input.value===''?null:Number(input.value);
+        if (v===null||Number.isNaN(v)) { delete allDays[ds]; }
+        else { allDays[ds]=v; }
+        document.getElementById(`mdelta-${ds}`).textContent = fmtDelta((Number(allDays[ds])||0)-DAILY_TARGET);
+        dirtyDates.add(ds); saveMonthBtn.disabled=true; // enable later after a debounce
+        // small debounce to avoid spamming
+        clearTimeout(buildMonth._t); buildMonth._t=setTimeout(()=>saveMonthBtn.disabled=false, 300);
+        buildCurrentWeekSummary(); buildHistory();
+      };
+      monthBody.appendChild(tr);
+    }
+  }
+  monthPicker.onchange = () => {
+    const [y,m] = monthPicker.value.split('-').map(Number);
+    if (!y || !m) return;
+    buildMonth(y, m-1);
+  };
+
+  // Timer
+  let timerStart = null, timerInterval = null;
+  function tickTimer(){
+    if (!timerStart){ timerStatus.textContent='00:00:00'; return; }
+    const ms = Date.now() - timerStart;
+    const s = Math.floor(ms/1000);
+    const h = String(Math.floor(s/3600)).padStart(2,'0');
+    const m = String(Math.floor((s%3600)/60)).padStart(2,'0');
+    const sec = String(s%60).padStart(2,'0');
+    timerStatus.textContent = `${h}:${m}:${sec}`;
+  }
+  timerBtn.onclick = () => {
+    if (!canEdit) return;
+    if (!timerStart) {
+      timerStart = Date.now();
+      localStorage.setItem('wh_timer_start', String(timerStart));
+      timerInterval = setInterval(tickTimer, 500);
+      tickTimer();
+      timerBtn.textContent='Running…';
+      timerSaveBtn.disabled=false;
+    }
+  };
+  timerSaveBtn.onclick = async () => {
+    if (!canEdit || !timerStart) return;
+    const durH = (Date.now() - timerStart) / (1000*60*60);
+    timerStart = null; clearInterval(timerInterval); timerInterval=null;
+    localStorage.removeItem('wh_timer_start');
+    timerBtn.textContent='Start timer'; timerStatus.textContent='00:00:00'; timerSaveBtn.disabled=true;
+
+    // Add to today and save
+    const ds = formatDate(new Date());
+    const prev = Number(allDays[ds])||0;
+    allDays[ds] = prev + durH;
+    dirtyDates.add(ds);
+    await saveDates(Array.from(dirtyDates)); // upsert
+  };
+  // Resume timer if alive
+  const restored = Number(localStorage.getItem('wh_timer_start')||'0');
+  if (restored>0){ timerStart = restored; timerInterval=setInterval(tickTimer,500); tickTimer(); timerBtn.textContent='Running…'; timerSaveBtn.disabled=false; }
+
+  // Add manual session
+  addSessionBtn.onclick = async () => {
+    if (!canEdit) return;
+    const s = startTimeEl.value, e = endTimeEl.value;
+    if (!s || !e) { alert('Pick start and end times.'); return; }
+    const [sh,sm] = s.split(':').map(Number);
+    const [eh,em] = e.split(':').map(Number);
+    let start = new Date(); start.setHours(sh, sm, 0, 0);
+    let end = new Date();   end.setHours(eh, em, 0, 0);
+    if (end <= start) { end = new Date(end.getTime()+24*3600*1000); } // cross midnight
+    const durH = (end - start) / (1000*60*60);
+    const ds = formatDate(new Date());
+    allDays[ds] = (Number(allDays[ds])||0) + durH;
+    dirtyDates.add(ds);
+    startTimeEl.value = ''; endTimeEl.value='';
+    await saveDates([ds]);
+  };
+
+  // History / bank
+  function fmtDelta(n){ return `${n>=0?'+':''}${trim(n)}h`; }
+  function trim(n){ return Number(n.toFixed(2)); }
+
+  function buildHistory() {
+    const today = new Date();
+    const currentMon = getMonday(today);
+    const includeCurrent = !excludeCurrentWeek.checked;
+
+    // Build list of all dates (Mon–Fri only) sorted asc
+    const keys = Object.keys(allDays).sort();
+    const dayRows = [];
+    for (const ds of keys) {
+      const d = new Date(ds+'T00:00:00');
+      const wd = d.getDay(); // 1..5 we keep
+      if (wd<1 || wd>5) continue;
+      const weekMon = getMonday(d);
+      if (!includeCurrent && weekMon.getTime() === currentMon.getTime()) continue; // exclude current week
+      const h = Number(allDays[ds]) || 0;
+      dayRows.push({date: ds, weekMon, hours: h, delta: h-DAILY_TARGET});
+    }
+
+    // Roll up days -> weeks (by Monday)
+    const byWeek = new Map();
+    for (const r of dayRows) {
+      const key = formatDate(r.weekMon);
+      if (!byWeek.has(key)) byWeek.set(key, { mon:r.weekMon, totalH:0, totalDelta:0 });
+      const w = byWeek.get(key);
+      w.totalH += r.hours; w.totalDelta += r.delta;
+    }
+    const weeks = Array.from(byWeek.values()).sort((a,b)=>a.mon-b.mon);
+
+    // cumulative bank by day order
+    let bank = 0;
+    for (const r of dayRows) bank += r.delta;
+
+    // Badge
+    bankScope.textContent = includeCurrent? '(including current week)' : '(excluding current week)';
+    bankBadge.className = 'badge ' + (bank<0?'red':bank===0?'yellow':'green');
+    bankBadge.textContent = bank<0 ? `${trim(bank)} h in debt` : bank===0 ? '0 h in bank' : `+${trim(bank)} h in bank`;
+
+    // History table
+    historyBody.innerHTML = '';
+    if (!weeks.length) { historyBody.innerHTML = '<tr><td colspan="4">No past data.</td></tr>'; return; }
+
+    // Compute bank after each week (cumulative across preceding weeks)
+    let wkBank = 0;
+    for (const w of weeks) {
+      wkBank += w.totalDelta;
+      const fri = addDays(w.mon,4);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${w.mon.toLocaleDateString()} – ${fri.toLocaleDateString()}</td>
+        <td>${trim(w.totalH)}</td>
+        <td>${fmtDelta(w.totalDelta)}</td>
+        <td>${wkBank>=0?'+':''}${trim(wkBank)}h</td>
+      `;
+      historyBody.appendChild(tr);
     }
   }
 
-  /* ------------------------------ SAVE/LOAD ----------------------------- */
+  // Save helpers
+  async function saveDates(dateList) {
+    if (!dateList.length) return;
+    // Build upsert rows
+    const rows = dateList
+      .filter(ds => ds && (allDays[ds]===0 || typeof allDays[ds]==='number'))
+      .map(ds => ({ work_date: ds, hours: Number(allDays[ds])||0 }));
+
+    const { error } = await supabaseClient
+      .from('work_log')
+      .upsert(rows, { onConflict: 'work_date' });
+
+    if (error) { console.error('Save error:', error); alert('Save error: ' + error.message); return; }
+
+    // Clean dirty flags that were saved
+    rows.forEach(r => dirtyDates.delete(r.work_date));
+    saveBtn.disabled = dirtyDates.size===0;
+    saveMonthBtn.disabled = dirtyDates.size===0;
+    await loadAll(); // refresh UI
+  }
+
+  saveBtn.onclick = async () => { await saveDates(Array.from(dirtyDates)); };
+  saveMonthBtn.onclick = async () => { await saveDates(Array.from(dirtyDates)); };
+  excludeCurrentWeek.onchange = () => buildHistory();
+
+  // Load
   async function loadAll() {
     const { data, error } = await supabaseClient
       .from('work_log')
@@ -307,50 +526,23 @@
 
     if (error) {
       console.error('Supabase error:', error);
-      historyT.innerHTML = `<tr><td colspan="5">${error.message}</td></tr>`;
-      bankBadge.className = 'badge red';
-      bankBadge.textContent = 'Error';
-      bankNote.textContent = '';
+      bankBadge.className='badge red'; bankBadge.textContent='Error';
+      historyBody.innerHTML = `<tr><td colspan="4">${error.message}</td></tr>`;
       return;
     }
-
     allDays = {};
     data.forEach(r => allDays[r.work_date] = Number(r.hours));
+
     buildCurrentWeek();
-    buildHistoryAndBank();
+    // Default month picker to current month
+    const now = new Date();
+    monthPicker.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const [yy,mm] = monthPicker.value.split('-').map(Number);
+    buildMonth(yy, mm-1);
+
+    buildHistory();
+    updateEditability();
   }
-
-  async function saveCurrentWeek() {
-    saveBtn.disabled = true;
-
-    const today = new Date();
-    const mon = getMonday(today);
-    const rows = [];
-    for (let i=0;i<5;i++) {
-      const ds = formatDate(addDays(mon,i));
-      const v = allDays[ds];
-      if (typeof v === 'number' && !Number.isNaN(v)) rows.push({ work_date: ds, hours: v });
-    }
-
-    const { error } = await supabaseClient.from('work_log')
-      .upsert(rows, { onConflict: 'work_date' });
-
-    if (error) {
-      console.error('Supabase save error:', error);
-      alert('Error saving: ' + error.message);
-      saveBtn.disabled = false;
-      return;
-    }
-    dirty = false;
-    await loadAll();
-  }
-
-  saveBtn.addEventListener('click', saveCurrentWeek);
-
-  window.addEventListener('beforeunload', (e)=>{
-    if (!dirty) return;
-    e.preventDefault(); e.returnValue = '';
-  });
 
   loadAll();
 </script>
