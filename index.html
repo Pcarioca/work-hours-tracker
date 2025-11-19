@@ -1,588 +1,191 @@
 <!doctype html>
 <html lang="en" data-theme="dark">
-<head>
-  <meta charset="utf-8" />
-  <title>Work Hours Tracker</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <style>
-    :root {
-      --bg: #050814;
-      --card: #111827;
-      --muted: #9aa3b2;
-      --text: #f5f6fa;
-      --border: #252b3b;
-      --input-bg: #050814;
-      --input-border: #374151;
-      --accent: #2563eb;
-      --badge-red-bg:#3b0b16; --badge-red:#ff6b81;
-      --badge-yellow-bg:#3b2e08; --badge-yellow:#ffeaa7;
-      --badge-green-bg:#052a1a; --badge-green:#55efc4;
-    }
-    [data-theme="light"] {
-      --bg: #f6f7fb;
-      --card: #ffffff;
-      --muted: #5f6b7a;
-      --text: #0b1020;
-      --border: #e5e7eb;
-      --input-bg: #ffffff;
-      --input-border: #cfd6df;
-      --accent: #2563eb;
-      --badge-red-bg:#ffe3e6; --badge-red:#b0002a;
-      --badge-yellow-bg:#fff4d6; --badge-yellow:#7a5b00;
-      --badge-green-bg:#e8fbf4; --badge-green:#0d7a5a;
-    }
-
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-    main { max-width: 1000px; margin: 0 auto; padding: 1rem; }
-
-    .row { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
-    .spacer { flex:1 1 auto; }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 12px 30px rgba(0,0,0,.18);
-    }
-
-    h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
-    h2 { font-size: 1.1rem; margin: 0 0 .4rem; }
-    p  { margin: 0; }
-    .muted { color: var(--muted); }
-
-    .badge {
-      display:inline-block; padding:.25rem .7rem; border-radius:999px;
-      font-weight:700; font-size:.9rem;
-    }
-    .red   { background:var(--badge-red-bg); color:var(--badge-red); }
-    .yellow{ background:var(--badge-yellow-bg); color:var(--badge-yellow); }
-    .green { background:var(--badge-green-bg); color:var(--badge-green); }
-
-    .btn {
-      border:none; border-radius:.7rem; padding:.55rem .95rem;
-      background: var(--accent); color:#fff; font-weight:700; cursor:pointer;
-      box-shadow: 0 6px 14px rgba(0,0,0,.25);
-    }
-    .btn:disabled { opacity:.5; cursor:default; box-shadow:none; }
-    .btn-ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
-
-    input[type="number"], input[type="time"], input[type="month"], input[type="date"], input[type="text"], input[type="password"] {
-      background: var(--input-bg); color: var(--text);
-      border: 1px solid var(--input-border);
-      border-radius: .6rem; padding:.45rem .55rem; font-size:.95rem;
-    }
-    label { font-size:.85rem; }
-    .grid-5 { display:grid; grid-template-columns: repeat(5, minmax(120px,1fr)); gap:.5rem; }
-    .day-card { background:var(--card); border:1px solid var(--border); border-radius:.75rem; padding:.55rem .75rem; }
-    .day-card label { display:block; margin-bottom:.25rem; color:var(--muted); }
-
-    table { width:100%; border-collapse:collapse; font-size:.86rem; }
-    th, td { padding:.35rem .45rem; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; }
-    th { font-weight:700; color:var(--muted); }
-
-    .logo { height:42px; object-fit:contain; }
-
-    @media (max-width:700px){ .grid-5 { grid-template-columns: repeat(2, 1fr); } }
-  </style>
-
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-</head>
-<body>
-<main>
-  <!-- Header with password login -->
-  <header class="card">
-    <div class="row">
-      <div>
-        <h1>Work Hours Tracker</h1>
-        <p class="muted">Target: <strong>4 h / day</strong>. Bank is computed from daily deltas (hours − 4).</p>
-      </div>
-      <div class="spacer"></div>
-      <img class="logo" alt="Logo" src="https://static.wixstatic.com/media/1a37a8_371b4c547bf749fea5456edd71552380~mv2.png/v1/fill/w_207,h_97,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/White%20and%20Blue%20Modern%20Data%20Analytics%20Services%20Facebook%20Cover%20(7).png" />
-    </div>
-
-    <div class="row" style="margin-top:.6rem">
-      <div id="bankBadge" class="badge yellow">Loading…</div>
-      <div id="bankScope" class="muted"></div>
-      <div class="spacer"></div>
-
-      <label class="row">
-        <input id="excludeCurrentWeek" type="checkbox" checked />
-        <span class="muted">Exclude current week from bank</span>
-      </label>
-
-      <button id="themeBtn" class="btn-ghost" type="button">Toggle theme</button>
-
-      <!-- Login area -->
-      <div id="loginArea" class="row">
-        <input id="passwordInput" type="password" placeholder="Password" autocomplete="current-password" />
-        <button id="unlockBtn" class="btn" type="button">Unlock</button>
-      </div>
-      <div id="lockArea" class="row" style="display:none">
-        <span class="muted">Editing unlocked</span>
-        <button id="lockBtn" class="btn" type="button">Lock</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Today Helper -->
-  <section class="card">
-    <h2>Today helper</h2>
-    <p class="muted" style="margin-bottom:.5rem">Use start–end or the live timer. Adds to today’s hours (you can still edit manually).</p>
-
-    <div class="row" style="gap:1rem; margin:.5rem 0;">
-      <label>Start <input id="startTime" type="time" /></label>
-      <label>End <input id="endTime" type="time" /></label>
-      <button id="addSessionBtn" class="btn" type="button">Add session</button>
-
-      <div class="spacer"></div>
-
-      <button id="timerBtn" class="btn" type="button">Start timer</button>
-      <div id="timerStatus" class="muted">00:00:00</div>
-      <button id="timerSaveBtn" class="btn" type="button" disabled>Stop & save</button>
-    </div>
-  </section>
-
-  <!-- Current Week (editable when unlocked) -->
-  <section class="card">
-    <div class="row">
-      <h2 id="currentTitle">This week</h2>
-      <div class="spacer"></div>
-      <button id="saveBtn" class="btn" type="button" disabled>Save changes</button>
-    </div>
-    <div id="weekGrid" class="grid-5" style="margin-top:.5rem"></div>
-    <div class="row" style="margin-top:.6rem">
-      <div>Worked this week: <strong><span id="weekHours">0</span> h</strong>
-        <span id="weekDelta" class="muted"></span></div>
-    </div>
-  </section>
-
-  <!-- Month editor -->
-  <section class="card">
-    <div class="row">
-      <h2>Edit any month</h2>
-      <div class="spacer"></div>
-      <label class="row">
-        <span class="muted">Month</span>
-        <input id="monthPicker" type="month" />
-      </label>
-      <button id="saveMonthBtn" class="btn" type="button" disabled>Save month changes</button>
-    </div>
-
-    <table style="margin-top:.6rem">
-      <thead>
-      <tr>
-        <th>Date</th><th>Weekday</th><th>Hours</th><th>Δ vs 4h</th>
-      </tr>
-      </thead>
-      <tbody id="monthBody">
-      <tr><td colspan="4">Select a month.</td></tr>
-      </tbody>
-    </table>
-  </section>
-
-  <!-- Bank & history (daily-based) -->
-  <section class="card">
-    <h2>History (daily-based → weekly rollups)</h2>
-    <table>
-      <thead>
-      <tr>
-        <th>Week</th>
-        <th>Mon–Fri total</th>
-        <th>Week Δ (Σ daily)</th>
-        <th>Bank after week</th>
-      </tr>
-      </thead>
-      <tbody id="historyBody">
-      <tr><td colspan="4">Loading…</td></tr>
-      </tbody>
-    </table>
-  </section>
-</main>
-
-<script>
-  /* ----------------- SUPABASE CONFIG ----------------- */
-  const supabaseUrl = 'https://pmapkowimesplgbvrook.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtYXBrb3dpbWVzcGxnYnZyb29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4MTUwNzYsImV4cCI6MjA3ODM5MTA3Nn0.5_jdBZfEHMq4thAe9UnmDOzAhQRq_9QclnEIjbaoj0M';
-  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-  /* --------------------------------------------------- */
-
-  const DAILY_TARGET = 4;
-
-  // DOM
-  const themeBtn = document.getElementById('themeBtn');
-  const excludeCurrentWeek = document.getElementById('excludeCurrentWeek');
-  const bankBadge = document.getElementById('bankBadge');
-  const bankScope = document.getElementById('bankScope');
-
-  const loginArea = document.getElementById('loginArea');
-  const passwordInput = document.getElementById('passwordInput');
-  const unlockBtn = document.getElementById('unlockBtn');
-  const lockArea = document.getElementById('lockArea');
-  const lockBtn = document.getElementById('lockBtn');
-
-  const weekGrid = document.getElementById('weekGrid');
-  const currentTitle = document.getElementById('currentTitle');
-  const saveBtn = document.getElementById('saveBtn');
-  const weekHoursEl = document.getElementById('weekHours');
-  const weekDeltaEl = document.getElementById('weekDelta');
-
-  const startTimeEl = document.getElementById('startTime');
-  const endTimeEl = document.getElementById('endTime');
-  const addSessionBtn = document.getElementById('addSessionBtn');
-  const timerBtn = document.getElementById('timerBtn');
-  const timerStatus = document.getElementById('timerStatus');
-  const timerSaveBtn = document.getElementById('timerSaveBtn');
-
-  const monthPicker = document.getElementById('monthPicker');
-  const monthBody = document.getElementById('monthBody');
-  const saveMonthBtn = document.getElementById('saveMonthBtn');
-
-  const historyBody = document.getElementById('historyBody');
-
-  // State
-  let canEdit = false;
-  let allDays = {}; // 'YYYY-MM-DD' -> number (hours)
-  let dirtyDates = new Set(); // dates edited anywhere
-
-  // Theme toggle
-  themeBtn.onclick = () => {
-    const root = document.documentElement;
-    const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    root.setAttribute('data-theme', next);
-  };
-
-  /* ----------------------- AUTH (server-side) ----------------------- */
-  async function tryUnlock() {
-    const pwd = passwordInput.value || '';
-    if (!pwd) { alert('Enter password.'); return; }
-
-    const { data, error } = await supabaseClient.rpc('verify_edit_password', { p_password: pwd });
-    if (error) { console.error('verify_edit_password error:', error); alert('Auth error: ' + error.message); return; }
-
-    if (data === true) {
-      canEdit = true;
-      localStorage.setItem('wh_edit_unlocked', '1'); // convenience on this device
-      passwordInput.value = '';
-      loginArea.style.display = 'none';
-      lockArea.style.display = 'flex';
-      updateEditability();
-    } else {
-      alert('Wrong password.');
-    }
-  }
-  function lockEditing() {
-    canEdit = false;
-    localStorage.removeItem('wh_edit_unlocked');
-    loginArea.style.display = 'flex';
-    lockArea.style.display = 'none';
-    updateEditability();
-  }
-  unlockBtn.onclick = tryUnlock;
-  lockBtn.onclick = lockEditing;
-
-  // Auto-unlock on this device if you want (optional convenience)
-  if (localStorage.getItem('wh_edit_unlocked') === '1') {
-    // still check with server once for freshness? Up to you; for now trust device.
-    canEdit = true;
-    loginArea.style.display = 'none';
-    lockArea.style.display = 'flex';
-  }
-
-  function updateEditability() {
-    // Inputs/buttons allowed w/o unlock:
-    const alwaysAllowed = new Set(['themeBtn','excludeCurrentWeek','monthPicker','unlockBtn','passwordInput']);
-    document.querySelectorAll('input,button').forEach(el => {
-      const id = el.id || '';
-      if (alwaysAllowed.has(id)) return;
-
-      if (!canEdit) {
-        // disable editing stuff
-        if (el.tagName === 'INPUT' || el.classList.contains('btn')) {
-          el.disabled = true;
-        }
-      } else {
-        el.disabled = false;
-      }
-    });
-
-    // Timer safety
-    if (!canEdit) { timerSaveBtn.disabled = true; }
-  }
-
-  /* ---------------------------- Date helpers ---------------------------- */
-  function atMidnight(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
-  function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
-  function getMonday(d){ const x=atMidnight(d); const day=x.getDay(); const diff=(day===0?-6:1)-day; return addDays(x,diff); }
-  function fridayOf(d){ return addDays(getMonday(d),4); }
-  function formatDate(d){ return d.toISOString().slice(0,10); }
-  function weekdayName(d){ return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]; }
-
-  /* ---------------------------- Build current week ---------------------------- */
-  function buildCurrentWeek() {
-    const today = new Date();
-    const mon = getMonday(today);
-    const fri = addDays(mon,4);
-    currentTitle.textContent = `This week (${mon.toLocaleDateString()} – ${fri.toLocaleDateString()})`;
-
-    weekGrid.innerHTML = '';
-    const names = ['Mon','Tue','Wed','Thu','Fri'];
-    let weekSum = 0, weekDelta = 0;
-
-    for (let i=0;i<5;i++) {
-      const d = addDays(mon,i);
-      const ds = formatDate(d);
-      const hours = allDays[ds] ?? '';
-
-      const div = document.createElement('div');
-      div.className = 'day-card';
-      div.innerHTML = `
-        <label>${names[i]} <span class="muted">(${ds})</span></label>
-        <input ${canEdit?'':'disabled'} data-date="${ds}" type="number" step="0.25" min="0" value="${hours}">
-        <div class="muted" style="margin-top:.25rem">
-          Δ: <span id="delta-${ds}">${fmtDelta((Number(hours)||0)-DAILY_TARGET)}</span>
+  <head>
+    <meta charset="utf-8" />
+    <title>Work Hours Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <main>
+      <header class="card">
+        <div class="row">
+          <div>
+            <h1>Work Hours Tracker</h1>
+            <p class="muted">
+              Target: <strong><span id="targetLabel">4 h / day</span></strong>.
+              Bank is computed from daily deltas (hours − target).
+            </p>
+          </div>
+          <div class="spacer"></div>
+          <img
+            class="logo"
+            alt="Logo"
+            src="https://static.wixstatic.com/media/1a37a8_371b4c547bf749fea5456edd71552380~mv2.png/v1/fill/w_207,h_97,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/White%20and%20Blue%20Modern%20Data%20Analytics%20Services%20Facebook%20Cover%20(7).png"
+          />
         </div>
-      `;
-      const input = div.querySelector('input');
-      input.oninput = () => {
-        const v = input.value===''?null:Number(input.value);
-        if (v===null||Number.isNaN(v)) { delete allDays[ds]; }
-        else { allDays[ds]=v; }
-        document.getElementById(`delta-${ds}`).textContent = fmtDelta((Number(allDays[ds])||0)-DAILY_TARGET);
-        dirtyDates.add(ds); saveBtn.disabled=false;
-        buildCurrentWeekSummary();
-      };
-      weekGrid.appendChild(div);
 
-      const n = Number(hours);
-      if (!Number.isNaN(n)) {
-        weekSum += n;
-        weekDelta += (n - DAILY_TARGET);
-      }
-    }
-    weekHoursEl.textContent = trim(weekSum);
-    weekDeltaEl.textContent = ` (Δ week: ${weekDelta>=0?'+':''}${trim(weekDelta)}h)`;
-  }
-  function buildCurrentWeekSummary() {
-    const today = new Date(); const mon=getMonday(today);
-    let sum=0, delta=0;
-    for (let i=0;i<5;i++){
-      const ds = formatDate(addDays(mon,i));
-      const h = Number(allDays[ds]); if (!Number.isNaN(h)) { sum += h; delta += (h-DAILY_TARGET); }
-    }
-    weekHoursEl.textContent = trim(sum);
-    weekDeltaEl.textContent = ` (Δ week: ${delta>=0?'+':''}${trim(delta)}h)`;
-  }
+        <div class="row" style="margin-top: 0.6rem">
+          <div id="bankBadge" class="badge yellow">Loading…</div>
+          <div id="bankScope" class="muted"></div>
+          <div class="spacer"></div>
 
-  /* ---------------------------- Month editor ---------------------------- */
-  function buildMonth(year, monthIdx) {
-    monthBody.innerHTML = '';
-    const first = new Date(year, monthIdx, 1);
-    const days = new Date(year, monthIdx+1, 0).getDate();
-    for (let d=1; d<=days; d++) {
-      const date = new Date(year, monthIdx, d);
-      const ds = formatDate(date);
-      const h = allDays[ds] ?? '';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${ds}</td>
-        <td>${weekdayName(date)}</td>
-        <td><input ${canEdit?'':'disabled'} data-date="${ds}" type="number" step="0.25" min="0" value="${h}" style="width:7rem"></td>
-        <td class="muted" id="mdelta-${ds}">${fmtDelta((Number(h)||0)-DAILY_TARGET)}</td>
-      `;
-      const input = tr.querySelector('input');
-      input.oninput = () => {
-        const v = input.value===''?null:Number(input.value);
-        if (v===null||Number.isNaN(v)) { delete allDays[ds]; }
-        else { allDays[ds]=v; }
-        document.getElementById(`mdelta-${ds}`).textContent = fmtDelta((Number(allDays[ds])||0)-DAILY_TARGET);
-        dirtyDates.add(ds); saveMonthBtn.disabled=true;
-        clearTimeout(buildMonth._t); buildMonth._t=setTimeout(()=>saveMonthBtn.disabled=false, 300);
-        buildCurrentWeekSummary(); buildHistory();
-      };
-      monthBody.appendChild(tr);
-    }
-  }
-  monthPicker.onchange = () => {
-    const [y,m] = monthPicker.value.split('-').map(Number);
-    if (!y || !m) return;
-    buildMonth(y, m-1);
-  };
+          <label class="row">
+            <input id="excludeCurrentWeek" type="checkbox" checked />
+            <span class="muted">Exclude current week from bank</span>
+          </label>
 
-  /* ---------------------------- Timer + sessions ---------------------------- */
-  let timerStart = null, timerInterval = null;
-  function tickTimer(){
-    if (!timerStart){ timerStatus.textContent='00:00:00'; return; }
-    const ms = Date.now() - timerStart;
-    const s = Math.floor(ms/1000);
-    const h = String(Math.floor(s/3600)).padStart(2,'0');
-    const m = String(Math.floor((s%3600)/60)).padStart(2,'0');
-    const sec = String(s%60).padStart(2,'0');
-    timerStatus.textContent = `${h}:${m}:${sec}`;
-  }
-  timerBtn.onclick = () => {
-    if (!canEdit) return;
-    if (!timerStart) {
-      timerStart = Date.now();
-      localStorage.setItem('wh_timer_start', String(timerStart));
-      timerInterval = setInterval(tickTimer, 500);
-      tickTimer();
-      timerBtn.textContent='Running…';
-      timerSaveBtn.disabled=false;
-    }
-  };
-  timerSaveBtn.onclick = async () => {
-    if (!canEdit || !timerStart) return;
-    const durH = (Date.now() - timerStart) / (1000*60*60);
-    timerStart = null; clearInterval(timerInterval); timerInterval=null;
-    localStorage.removeItem('wh_timer_start');
-    timerBtn.textContent='Start timer'; timerStatus.textContent='00:00:00'; timerSaveBtn.disabled=true;
+          <label class="row">
+            <span class="muted">Daily target (hours)</span>
+            <input id="targetInput" type="number" min="0" step="0.25" value="4" style="width: 5rem" />
+          </label>
 
-    const ds = formatDate(new Date());
-    const prev = Number(allDays[ds])||0;
-    allDays[ds] = prev + durH;
-    dirtyDates.add(ds);
-    await saveDates([ds]);
-  };
-  const restored = Number(localStorage.getItem('wh_timer_start')||'0');
-  if (restored>0){ timerStart = restored; timerInterval=setInterval(tickTimer,500); tickTimer(); timerBtn.textContent='Running…'; timerSaveBtn.disabled=false; }
+          <button id="themeBtn" class="btn-ghost" type="button">Toggle theme</button>
+        </div>
+      </header>
 
-  // Manual session add
-  document.getElementById('addSessionBtn').onclick = async () => {
-    if (!canEdit) return;
-    const s = startTimeEl.value, e = endTimeEl.value;
-    if (!s || !e) { alert('Pick start and end times.'); return; }
-    const [sh,sm] = s.split(':').map(Number);
-    const [eh,em] = e.split(':').map(Number);
-    let start = new Date(); start.setHours(sh, sm, 0, 0);
-    let end = new Date();   end.setHours(eh, em, 0, 0);
-    if (end <= start) { end = new Date(end.getTime()+24*3600*1000); } // cross midnight
-    const durH = (end - start) / (1000*60*60);
-    const ds = formatDate(new Date());
-    allDays[ds] = (Number(allDays[ds])||0) + durH;
-    dirtyDates.add(ds);
-    startTimeEl.value = ''; endTimeEl.value='';
-    await saveDates([ds]);
-  };
+      <section id="loginArea" class="card" style="display: flex">
+        <div class="row">
+          <input id="passwordInput" type="password" placeholder="Enter password to edit" />
+          <button id="unlockBtn" class="btn" type="button">Unlock editing</button>
+        </div>
+      </section>
 
-  /* ---------------------------- History / bank ---------------------------- */
-  function fmtDelta(n){ return `${n>=0?'+':''}${trim(n)}h`; }
-  function trim(n){ return Number(n.toFixed(2)); }
+      <section id="lockArea" class="card" style="display: none">
+        <div class="row">
+          <p>You are editing this tracker.</p>
+          <div class="spacer"></div>
+          <button id="lockBtn" class="btn" type="button">Lock editing</button>
+        </div>
+      </section>
 
-  function buildHistory() {
-    const today = new Date();
-    const currentMon = getMonday(today);
-    const includeCurrent = !excludeCurrentWeek.checked;
+      <section class="card">
+        <h2>Quick timer</h2>
+        <div class="row">
+          <button id="timerBtn" class="btn" type="button">Start timer</button>
+          <div id="timerStatus" style="font-size: 1.6rem">00:00:00</div>
+          <button id="timerSaveBtn" class="btn" type="button" disabled>Stop &amp; save</button>
+        </div>
 
-    // Build list of all dates (Mon–Fri only) sorted asc
-    const keys = Object.keys(allDays).sort();
-    const dayRows = [];
-    for (const ds of keys) {
-      const d = new Date(ds+'T00:00:00');
-      const wd = d.getDay(); // 1..5 we keep
-      if (wd<1 || wd>5) continue;
-      const weekMon = getMonday(d);
-      if (!includeCurrent && weekMon.getTime() === currentMon.getTime()) continue; // exclude current week
-      const h = Number(allDays[ds]) || 0;
-      dayRows.push({date: ds, weekMon, hours: h, delta: h-DAILY_TARGET});
-    }
+        <div class="row" style="margin-top: 0.6rem">
+          <label class="row">
+            <span class="muted">Start</span>
+            <input id="startTime" type="time" />
+          </label>
+          <label class="row">
+            <span class="muted">End</span>
+            <input id="endTime" type="time" />
+          </label>
+          <button id="addSessionBtn" class="btn" type="button">Add session</button>
+        </div>
+      </section>
 
-    // Roll up days -> weeks (by Monday)
-    const byWeek = new Map();
-    for (const r of dayRows) {
-      const key = formatDate(r.weekMon);
-      if (!byWeek.has(key)) byWeek.set(key, { mon:r.weekMon, totalH:0, totalDelta:0 });
-      const w = byWeek.get(key);
-      w.totalH += r.hours; w.totalDelta += r.delta;
-    }
-    const weeks = Array.from(byWeek.values()).sort((a,b)=>a.mon-b.mon);
+      <section class="card" id="insightsCard">
+        <div class="row">
+          <h2>Insights &amp; focus</h2>
+          <div class="spacer"></div>
+          <button id="fillTargetBtn" class="btn-ghost" type="button">Fill blanks with target</button>
+          <button id="clearWeekBtn" class="btn-ghost" type="button">Clear this week</button>
+        </div>
+        <p class="muted" style="margin-bottom: 0.4rem">Weekly goal progress</p>
+        <div class="progress">
+          <div
+            id="weekProgressFill"
+            class="progress-fill"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          ></div>
+        </div>
+        <div class="row" style="margin-top: 0.25rem">
+          <span id="weekProgressLabel" class="muted">0h of 0h</span>
+        </div>
+        <div class="insight-grid" style="margin-top: 0.75rem">
+          <div>
+            <p class="muted">Current streak (meets target)</p>
+            <p class="stat-value" id="currentStreakStat">0 days</p>
+          </div>
+          <div>
+            <p class="muted">Best streak</p>
+            <p class="stat-value" id="bestStreakStat">0 days</p>
+          </div>
+          <div>
+            <p class="muted">Recorded weekday hours</p>
+            <p class="stat-value" id="totalHoursStat">0 h</p>
+          </div>
+          <div>
+            <p class="muted">Avg weekday</p>
+            <p class="stat-value" id="avgDayStat">0 h</p>
+          </div>
+        </div>
+        <p class="muted" id="bestDayStat" style="margin-top: 0.6rem">Best day: —</p>
+      </section>
 
-    // cumulative bank by day order
-    let bank = 0;
-    for (const r of dayRows) bank += r.delta;
+      <section class="card">
+        <div class="row">
+          <h2 id="currentTitle">This week</h2>
+          <div class="spacer"></div>
+          <button id="saveBtn" class="btn" type="button" disabled>Save changes</button>
+        </div>
+        <div id="weekGrid" class="grid-5" style="margin-top: 0.5rem"></div>
+        <div class="row" style="margin-top: 0.6rem">
+          <div>
+            Worked this week: <strong><span id="weekHours">0</span> h</strong>
+            <span id="weekDelta" class="muted"></span>
+          </div>
+        </div>
+      </section>
 
-    // Badge
-    bankScope.textContent = includeCurrent? '(including current week)' : '(excluding current week)';
-    bankBadge.className = 'badge ' + (bank<0?'red':bank===0?'yellow':'green');
-    bankBadge.textContent = bank<0 ? `${trim(bank)} h in debt` : bank===0 ? '0 h in bank' : `+${trim(bank)} h in bank`;
+      <section class="card">
+        <div class="row">
+          <h2>Edit any month</h2>
+          <div class="spacer"></div>
+          <label class="row">
+            <span class="muted">Month</span>
+            <input id="monthPicker" type="month" />
+          </label>
+          <button id="saveMonthBtn" class="btn" type="button" disabled>Save month changes</button>
+        </div>
 
-    // History table
-    historyBody.innerHTML = '';
-    if (!weeks.length) { historyBody.innerHTML = '<tr><td colspan="4">No past data.</td></tr>'; return; }
+        <table style="margin-top: 0.6rem">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Weekday</th>
+              <th>Hours</th>
+              <th>Δ vs target</th>
+            </tr>
+          </thead>
+          <tbody id="monthBody">
+            <tr><td colspan="4">Select a month.</td></tr>
+          </tbody>
+        </table>
+      </section>
 
-    let wkBank = 0;
-    for (const w of weeks) {
-      wkBank += w.totalDelta;
-      const fri = addDays(w.mon,4);
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${w.mon.toLocaleDateString()} – ${fri.toLocaleDateString()}</td>
-        <td>${trim(w.totalH)}</td>
-        <td>${w.totalDelta>=0?'+':''}${trim(w.totalDelta)}h</td>
-        <td>${wkBank>=0?'+':''}${trim(wkBank)}h</td>
-      `;
-      historyBody.appendChild(tr);
-    }
-  }
+      <section class="card">
+        <div class="row">
+          <h2>History (daily-based → weekly rollups)</h2>
+          <div class="spacer"></div>
+          <button id="exportCsvBtn" class="btn" type="button">Export CSV</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Week</th>
+              <th>Mon–Fri total</th>
+              <th>Week Δ (Σ daily)</th>
+              <th>Bank after week</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="4">Loading…</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
 
-  /* ---------------------------- Save/load ---------------------------- */
-  async function saveDates(dateList) {
-    if (!canEdit) { alert('Unlock to edit.'); return; }
-    if (!dateList.length) return;
-    const rows = dateList
-      .filter(ds => ds && (allDays[ds]===0 || typeof allDays[ds]==='number'))
-      .map(ds => ({ work_date: ds, hours: Number(allDays[ds])||0 }));
-
-    const { error } = await supabaseClient
-      .from('work_log')
-      .upsert(rows, { onConflict: 'work_date' });
-
-    if (error) { console.error('Save error:', error); alert('Save error: ' + error.message); return; }
-
-    rows.forEach(r => dirtyDates.delete(r.work_date));
-    saveBtn.disabled = dirtyDates.size===0;
-    saveMonthBtn.disabled = dirtyDates.size===0;
-    await loadAll();
-  }
-
-  saveBtn.onclick = async () => { await saveDates(Array.from(dirtyDates)); };
-  saveMonthBtn.onclick = async () => { await saveDates(Array.from(dirtyDates)); };
-  excludeCurrentWeek.onchange = () => buildHistory();
-
-  async function loadAll() {
-    const { data, error } = await supabaseClient
-      .from('work_log')
-      .select('work_date, hours')
-      .order('work_date', { ascending: true });
-
-    if (error) {
-      console.error('Supabase error:', error);
-      bankBadge.className='badge red'; bankBadge.textContent='Error';
-      historyBody.innerHTML = `<tr><td colspan="4">${error.message}</td></tr>`;
-      return;
-    }
-    allDays = {};
-    data.forEach(r => allDays[r.work_date] = Number(r.hours));
-
-    buildCurrentWeek();
-    const now = new Date();
-    monthPicker.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    const [yy,mm] = monthPicker.value.split('-').map(Number);
-    buildMonth(yy, mm-1);
-    buildHistory();
-    updateEditability();
-  }
-
-  // Init
-  loadAll();
-</script>
-</body>
+    <script type="module" src="./js/app.js"></script>
+  </body>
 </html>
