@@ -1,15 +1,7 @@
 import { supabaseClient } from './supabaseClient.js';
 import { addDays, formatDate, getMonday, isWeekday, parseLocalDate, weekdayName } from './dateUtils.js';
-import { initEasterEggs, initSparkles, initWeatherEffects } from './fx.js';
 
 const DEFAULT_TARGET = 4;
-const weatherStatus = document.getElementById('weatherStatus');
-const fxLayer = document.getElementById('fxLayer');
-const secretHint = document.getElementById('secretHint');
-const siteTitle = document.querySelector('h1');
-const logo = document.querySelector('.logo');
-const demoBtn = document.getElementById('demoBtn');
-const demoNotice = document.getElementById('demoNotice');
 
 // DOM references
 const themeBtn = document.getElementById('themeBtn');
@@ -61,30 +53,6 @@ let dirtyDates = new Set();
 let timerStart = null;
 let timerInterval = null;
 let dataReady = false;
-let demoMode = false;
-let demoSaveNotified = false;
-
-// Hour helpers to keep displays human-friendly (no decimals on screen)
-const MINUTES_PER_HOUR = 60;
-function toMinutes(hours) {
-  const n = Number(hours);
-  if (Number.isNaN(n)) return 0;
-  return Math.round(n * MINUTES_PER_HOUR);
-}
-
-function formatHours(value) {
-  const minutes = Math.abs(toMinutes(value));
-  const h = Math.floor(minutes / MINUTES_PER_HOUR);
-  const m = minutes % MINUTES_PER_HOUR;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
-}
-
-function formatSignedHours(value, { includePlus = true } = {}) {
-  if (!value) return '0h';
-  const sign = value < 0 ? '-' : includePlus ? '+' : '';
-  return `${sign}${formatHours(Math.abs(value))}`;
-}
 
 function getDailyTarget() {
   return Number(localStorage.getItem('wh_daily_target')) || DEFAULT_TARGET;
@@ -94,7 +62,7 @@ function setDailyTarget(value) {
   const val = Math.max(0, Number(value) || DEFAULT_TARGET);
   localStorage.setItem('wh_daily_target', String(val));
   targetInput.value = val;
-  targetLabel.textContent = `${formatHours(val)} per day`;
+  targetLabel.textContent = `${trim(val)} h / day`;
   rebuildAllSummaries();
 }
 
@@ -113,48 +81,6 @@ themeBtn.onclick = () => {
   root.setAttribute('data-theme', next);
   localStorage.setItem('wh_theme', next);
 };
-
-/* ---------------------------- Demo mode ---------------------------- */
-// Create a lively mock dataset so the site can be previewed safely without touching
-// production data (handy for GitHub Pages or quick demos).
-function buildDemoDataset() {
-  const sample = {};
-  const today = new Date();
-  const startMonday = getMonday(addDays(today, -14));
-  const baseTarget = getDailyTarget();
-  const weeklyPatterns = [
-    [baseTarget + 0.5, baseTarget + 1, baseTarget - 0.5, baseTarget + 1.5, baseTarget - 0.25],
-    [baseTarget + 1.25, baseTarget + 0.75, baseTarget - 0.25, baseTarget - 0.5, baseTarget + 1],
-    [baseTarget - 0.5, baseTarget, baseTarget - 0.25, baseTarget + 0.75, baseTarget - 0.25],
-  ];
-
-  weeklyPatterns.forEach((week, idx) => {
-    const base = addDays(startMonday, idx * 7);
-    week.forEach((hours, dayIdx) => {
-      sample[formatDate(addDays(base, dayIdx))] = Math.max(0, Math.round(hours * 4) / 4);
-    });
-  });
-
-  return sample;
-}
-
-function enableDemoMode(reason = 'Demo mode: changes stay on this page only.') {
-  demoMode = true;
-  dataReady = true;
-  canEdit = true;
-  allDays = buildDemoDataset();
-  dirtyDates = new Set();
-  saveBtn.disabled = true;
-  saveMonthBtn.disabled = true;
-  if (demoNotice) {
-    demoNotice.style.display = 'block';
-    demoNotice.textContent = reason;
-  }
-  loginArea.style.display = 'none';
-  lockArea.style.display = 'none';
-  renderAfterDataLoad();
-  updateEditability();
-}
 
 /* ----------------------- AUTH (server-side) ----------------------- */
 async function tryUnlock() {
@@ -225,17 +151,6 @@ function updateEditability() {
   if (!canEdit) {
     timerSaveBtn.disabled = true;
   }
-}
-
-function renderAfterDataLoad() {
-  buildCurrentWeek();
-  if (!monthPicker.value) {
-    monthPicker.value = formatMonthValue(new Date());
-  }
-  refreshMonthView();
-  buildHistory();
-  updateInsights();
-  updateEditability();
 }
 
 /* ---------------------------- Build current week ---------------------------- */
@@ -372,8 +287,8 @@ function buildCurrentWeekSummary() {
       delta += h - target;
     }
   }
-  weekHoursEl.textContent = formatHours(sum);
-  weekDeltaEl.textContent = ` (Δ week: ${formatSignedHours(delta)})`;
+  weekHoursEl.textContent = trim(sum);
+  weekDeltaEl.textContent = ` (Δ week: ${delta >= 0 ? '+' : ''}${trim(delta)}h)`;
   updateWeekProgress(sum);
 }
 
@@ -386,8 +301,8 @@ function updateWeekProgress(hoursWorked) {
   weekProgressFill.setAttribute('aria-valuenow', String(pct));
   weekProgressLabel.textContent =
     weeklyGoal === 0
-      ? `${formatHours(hoursWorked)} recorded (no target set)`
-      : `${formatHours(hoursWorked)} of ${formatHours(weeklyGoal)} (${pct}%)`;
+      ? `${trim(hoursWorked)}h recorded (no target set)`
+      : `${trim(hoursWorked)}h of ${trim(weeklyGoal)}h (${pct}%)`;
 }
 
 /* ---------------------------- Month editor ---------------------------- */
@@ -513,7 +428,10 @@ addSessionBtn.onclick = async () => {
 
 /* ---------------------------- History / bank ---------------------------- */
 function fmtDelta(n) {
-  return formatSignedHours(n);
+  return `${n >= 0 ? '+' : ''}${trim(n)}h`;
+}
+function trim(n) {
+  return Number(n.toFixed(2));
 }
 
 function buildHistory() {
@@ -549,7 +467,7 @@ function buildHistory() {
   bankScope.textContent = includeCurrent ? '(including current week)' : '(excluding current week)';
   bankBadge.className = 'badge ' + (bank < 0 ? 'red' : bank === 0 ? 'yellow' : 'green');
   bankBadge.textContent =
-    bank < 0 ? `${formatHours(Math.abs(bank))} in debt` : bank === 0 ? '0h in bank' : `${formatSignedHours(bank)} in bank`;
+    bank < 0 ? `${trim(bank)} h in debt` : bank === 0 ? '0 h in bank' : `+${trim(bank)} h in bank`;
 
   historyBody.innerHTML = '';
   if (!weeks.length) {
@@ -564,9 +482,9 @@ function buildHistory() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${w.mon.toLocaleDateString()} – ${fri.toLocaleDateString()}</td>
-      <td>${formatHours(w.totalH)}</td>
-      <td>${formatSignedHours(w.totalDelta)}</td>
-      <td>${formatSignedHours(wkBank)}</td>
+      <td>${trim(w.totalH)}</td>
+      <td>${w.totalDelta >= 0 ? '+' : ''}${trim(w.totalDelta)}h</td>
+      <td>${wkBank >= 0 ? '+' : ''}${trim(wkBank)}h</td>
     `;
     historyBody.appendChild(tr);
   }
@@ -622,17 +540,17 @@ function updateInsights() {
   const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
   const recordedDays = new Set(entries.map((entry) => entry.ds)).size;
   const avgDay = recordedDays ? totalHours / recordedDays : 0;
-  totalHoursStat.textContent = formatHours(totalHours);
-  avgDayStat.textContent = formatHours(avgDay);
+  totalHoursStat.textContent = `${trim(totalHours)} h`;
+  avgDayStat.textContent = `${trim(avgDay)} h`;
 
   const productiveEntries = entries.filter((entry) => entry.hours > 0);
   if (productiveEntries.length) {
     const bestDay = productiveEntries.reduce((best, entry) =>
       entry.hours > best.hours ? entry : best
     );
-    bestDayStat.textContent = `Best day: ${weekdayName(bestDay.date)} ${bestDay.ds} at ${formatHours(
+    bestDayStat.textContent = `Best day: ${weekdayName(bestDay.date)} ${bestDay.ds} at ${trim(
       bestDay.hours
-    )}`;
+    )} h`;
   } else {
     bestDayStat.textContent = 'Best day: —';
   }
@@ -653,17 +571,6 @@ async function saveDates(dateList) {
     return;
   }
   if (!dateList.length) return;
-  if (demoMode) {
-    [...dateList].forEach((ds) => dirtyDates.delete(ds));
-    saveBtn.disabled = dirtyDates.size === 0;
-    saveMonthBtn.disabled = dirtyDates.size === 0;
-    renderAfterDataLoad();
-    if (!demoSaveNotified) {
-      alert('Demo mode: changes are kept locally so you can explore safely.');
-      demoSaveNotified = true;
-    }
-    return;
-  }
   const upserts = [];
   const deletes = [];
 
@@ -714,10 +621,6 @@ saveMonthBtn.onclick = async () => {
 excludeCurrentWeek.onchange = () => buildHistory();
 
 async function loadAll() {
-  if (demoMode) {
-    renderAfterDataLoad();
-    return;
-  }
   dataReady = false;
   const { data, error } = await supabaseClient
     .from('work_log')
@@ -726,7 +629,9 @@ async function loadAll() {
 
   if (error) {
     console.error('Supabase error:', error);
-    enableDemoMode('Demo mode: database unreachable, so a safe preview is loaded.');
+    bankBadge.className = 'badge red';
+    bankBadge.textContent = 'Error';
+    historyBody.innerHTML = `<tr><td colspan="4">${error.message}</td></tr>`;
     return;
   }
   allDays = {};
@@ -736,8 +641,14 @@ async function loadAll() {
   saveBtn.disabled = true;
   saveMonthBtn.disabled = true;
   dataReady = true;
-  monthPicker.value = monthPicker.value || formatMonthValue(new Date());
-  renderAfterDataLoad();
+
+  buildCurrentWeek();
+  const now = new Date();
+  monthPicker.value = formatMonthValue(now);
+  refreshMonthView();
+  buildHistory();
+  updateInsights();
+  updateEditability();
 }
 
 function rebuildAllSummaries() {
@@ -758,7 +669,7 @@ exportCsvBtn.onclick = () => {
   keys.forEach((ds) => {
     const hours = Number(allDays[ds]) || 0;
     const delta = hours - target;
-    rows.push(`${ds},${formatHours(hours)},${formatSignedHours(delta, { includePlus: true })}`);
+    rows.push(`${ds},${trim(hours)},${trim(delta)}`);
   });
   const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
@@ -779,46 +690,4 @@ function formatMonthValue(date) {
 }
 
 // Init
-if (demoBtn) {
-  demoBtn.onclick = () => enableDemoMode('Demo mode: preview without touching real data.');
-}
-
-const urlParams = new URLSearchParams(window.location.search);
-const demoRequested = urlParams.get('demo') === '1';
-
-if (demoRequested) {
-  enableDemoMode('Demo mode requested via ?demo=1. Enjoy the tour!');
-} else {
-  loadAll();
-}
-
-// Playful extras
-const sparkleControl = initSparkles();
-initEasterEggs({
-  siteTitle,
-  logo,
-  secretHint,
-  onSecretToggle: (enabled) => {
-    document.body.classList.toggle('cozy-mode', enabled);
-  },
-});
-
-if (bankBadge) {
-  let bankClicks = 0;
-  bankBadge.addEventListener('click', (event) => {
-    bankClicks += 1;
-    if (bankClicks % 4 === 0) {
-      sparkleControl.spawnSparkles(event.clientX || 0, event.clientY || 0, 12);
-      bankBadge.classList.add('wiggle');
-      setTimeout(() => bankBadge.classList.remove('wiggle'), 600);
-    }
-  });
-}
-
-initWeatherEffects({
-  statusEl: weatherStatus,
-  layerEl: fxLayer,
-  onMood: (mood) => {
-    document.body.dataset.weatherMood = mood;
-  },
-});
+loadAll();
